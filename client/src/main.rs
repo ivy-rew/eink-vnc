@@ -3,6 +3,9 @@ extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
+use sdl2::pixels::{Color, PixelMasks, PixelFormatEnum as SdlPixelFormat};
+use sdl2::rect::Rect as SdlRect;
+
 mod device;
 mod framebuffer;
 #[macro_use]
@@ -96,6 +99,11 @@ fn main() -> Result<(), Error> {
     let contrast_gray_point = value_t!(matches.value_of("GRAYPOINT"), f32).unwrap_or(224.0);
     let white_cutoff = value_t!(matches.value_of("WHITECUTOFF"), u8).unwrap_or(255);
     let exclusive = matches.is_present("EXCLUSIVE");
+
+    let sdl_context = sdl2::init().unwrap();
+    let sdl_video = sdl_context.video().unwrap();
+    let mut sdl_timer = sdl_context.timer().unwrap();
+    let mut sdl_events = sdl_context.event_pump().unwrap();
 
     info!("connecting to {}:{}", host, port);
     let stream = match std::net::TcpStream::connect((host, port)) {
@@ -226,6 +234,7 @@ fn main() -> Result<(), Error> {
     };
 
     const FRAME_MS: u64 = 1000 / 30;
+    const FRAME_MS_U32: u32 = 1000 / 30;
 
     const MAX_DIRTY_REFRESHES: usize = 500;
 
@@ -239,9 +248,13 @@ fn main() -> Result<(), Error> {
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
     let post_proc_enabled = contrast_exp != 1.0;
+    let mut key_ctrl = false;
+    let (mut mouse_x,   mut mouse_y)   = (0u16, 0u16);
+    let mut mouse_buttons = 0u8;
 
     'running: loop {
         let time_at_sol = Instant::now();
+        let ticks = sdl_timer.ticks();
 
         for event in vnc.poll_iter() {
             use client::Event;
@@ -454,6 +467,89 @@ fn main() -> Result<(), Error> {
             true,
         )
         .unwrap();
+
+    for event in sdl_events.wait_timeout_iter(sdl_timer.ticks() - ticks + FRAME_MS_U32 ) {
+            use sdl2::event::{Event, WindowEventId};
+
+/*
+            match event {
+                Event::Quit { .. } => break 'running,
+                Event::Window { win_event_id: WindowEventId::SizeChanged, .. } => {
+                    let screen_rect = SdlRect::new_unwrap(
+                        0, 0, width as u32, height as u32);
+                    renderer.copy(&screen, None, Some(screen_rect));
+                    renderer.present()
+                },
+                _ => ()
+            }
+
+            if view_only { continue }
+*/
+
+            match event {
+                Event::KeyDown { keycode: Some(keycode), .. } |
+                Event::KeyUp { keycode: Some(keycode), .. } => {
+                    use sdl2::keyboard::Keycode;
+                    let down = match event { Event::KeyDown { .. } => true, _ => false };
+                    match keycode {
+                        Keycode::LCtrl | Keycode::RCtrl => key_ctrl = down,
+                        _ => ()
+                    }
+                    match map_special_key(key_ctrl, keycode) {
+                        Some(keysym) => { vnc.send_key_event(down, keysym).unwrap() },
+                        None => ()
+                    }
+                },
+                Event::TextInput { text, .. } => {
+                    let chr = 0x01000000 + text.chars().next().unwrap() as u32;
+                    vnc.send_key_event(true, chr).unwrap();
+                    vnc.send_key_event(false, chr).unwrap()
+                }
+                Event::MouseMotion { x, y, .. } => {
+                    mouse_x = x as u16;
+                    mouse_y = y as u16;
+                    //if !qemu_hacks {
+                        vnc.send_pointer_event(mouse_buttons, mouse_x, mouse_y).unwrap()
+                    //}
+                },
+                Event::MouseButtonDown { x, y, mouse_btn, .. } |
+                Event::MouseButtonUp { x, y, mouse_btn, .. } => {
+                    use sdl2::mouse::Mouse;
+                    mouse_x = x as u16;
+                    mouse_y = y as u16;
+                    let mouse_button =
+                        match mouse_btn {
+                            Mouse::Left       => 0x01,
+                            Mouse::Middle     => 0x02,
+                            Mouse::Right      => 0x04,
+                            Mouse::X1         => 0x20,
+                            Mouse::X2         => 0x40,
+                            Mouse::Unknown(_) => 0x00
+                        };
+                    match event {
+                        Event::MouseButtonDown { .. } => mouse_buttons |= mouse_button,
+                        Event::MouseButtonUp   { .. } => mouse_buttons &= !mouse_button,
+                        _ => unreachable!()
+                    };
+                    vnc.send_pointer_event(mouse_buttons, mouse_x, mouse_y).unwrap()
+                },
+                Event::MouseWheel { y, .. } => {
+                    if y == 1 {
+                        vnc.send_pointer_event(mouse_buttons | 0x08, mouse_x, mouse_y).unwrap();
+                        vnc.send_pointer_event(mouse_buttons, mouse_x, mouse_y).unwrap();
+                    } else if y == -1 {
+                        vnc.send_pointer_event(mouse_buttons | 0x10, mouse_x, mouse_y).unwrap();
+                        vnc.send_pointer_event(mouse_buttons, mouse_x, mouse_y).unwrap();
+                    }
+                }
+                Event::ClipboardUpdate { .. } => {
+                    vnc.update_clipboard(&sdl_video.clipboard().clipboard_text().unwrap()).unwrap()
+                },
+                _ => ()
+            }
+        }
+
+
     }
 
     Ok(())
@@ -476,3 +572,153 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
 
     list.push(rect);
 }
+
+fn map_special_key(alnum_ok: bool, keycode: sdl2::keyboard::Keycode) -> Option<u32> {
+    use sdl2::keyboard::Keycode::*;
+    use x11::keysym::*;
+
+    let x11code = match keycode {
+        Space => XK_space,
+        Exclaim => XK_exclam,
+        Quotedbl => XK_quotedbl,
+        Hash => XK_numbersign,
+        Dollar => XK_dollar,
+        Percent => XK_percent,
+        Ampersand => XK_ampersand,
+        Quote => XK_apostrophe,
+        LeftParen => XK_parenleft,
+        RightParen => XK_parenright,
+        Asterisk => XK_asterisk,
+        Plus => XK_plus,
+        Comma => XK_comma,
+        Minus => XK_minus,
+        Period => XK_period,
+        Slash => XK_slash,
+        Num0 => XK_0,
+        Num1 => XK_1,
+        Num2 => XK_2,
+        Num3 => XK_3,
+        Num4 => XK_4,
+        Num5 => XK_5,
+        Num6 => XK_6,
+        Num7 => XK_7,
+        Num8 => XK_8,
+        Num9 => XK_9,
+        Colon => XK_colon,
+        Semicolon => XK_semicolon,
+        Less => XK_less,
+        Equals => XK_equal,
+        Greater => XK_greater,
+        Question => XK_question,
+        At => XK_at,
+        LeftBracket => XK_bracketleft,
+        Backslash => XK_backslash,
+        RightBracket => XK_bracketright,
+        Caret => XK_caret,
+        Underscore => XK_underscore,
+        Backquote => XK_grave,
+        A => XK_a,
+        B => XK_b,
+        C => XK_c,
+        D => XK_d,
+        E => XK_e,
+        F => XK_f,
+        G => XK_g,
+        H => XK_h,
+        I => XK_i,
+        J => XK_j,
+        K => XK_k,
+        L => XK_l,
+        M => XK_m,
+        N => XK_n,
+        O => XK_o,
+        P => XK_p,
+        Q => XK_q,
+        R => XK_r,
+        S => XK_s,
+        T => XK_t,
+        U => XK_u,
+        V => XK_v,
+        W => XK_w,
+        X => XK_x,
+        Y => XK_y,
+        Z => XK_z,
+        _ => 0
+    };
+    if x11code != 0 && alnum_ok { return Some(x11code as u32) }
+
+    let x11code = match keycode {
+        Backspace => XK_BackSpace,
+        Tab => XK_Tab,
+        Return => XK_Return,
+        Escape => XK_Escape,
+        Delete => XK_Delete,
+        CapsLock => XK_Caps_Lock,
+        F1 => XK_F1,
+        F2 => XK_F2,
+        F3 => XK_F3,
+        F4 => XK_F4,
+        F5 => XK_F5,
+        F6 => XK_F6,
+        F7 => XK_F7,
+        F8 => XK_F8,
+        F9 => XK_F9,
+        F10 => XK_F10,
+        F11 => XK_F11,
+        F12 => XK_F12,
+        PrintScreen => XK_Print,
+        ScrollLock => XK_Scroll_Lock,
+        Pause => XK_Pause,
+        Insert => XK_Insert,
+        Home => XK_Home,
+        PageUp => XK_Page_Up,
+        End => XK_End,
+        PageDown => XK_Page_Down,
+        Right => XK_Right,
+        Left => XK_Left,
+        Down => XK_Down,
+        Up => XK_Up,
+        NumLockClear => XK_Num_Lock,
+        KpDivide => XK_KP_Divide,
+        KpMultiply => XK_KP_Multiply,
+        KpMinus => XK_KP_Subtract,
+        KpPlus => XK_KP_Add,
+        KpEnter => XK_KP_Enter,
+        Kp1 => XK_KP_1,
+        Kp2 => XK_KP_2,
+        Kp3 => XK_KP_3,
+        Kp4 => XK_KP_4,
+        Kp5 => XK_KP_5,
+        Kp6 => XK_KP_6,
+        Kp7 => XK_KP_7,
+        Kp8 => XK_KP_8,
+        Kp9 => XK_KP_9,
+        Kp0 => XK_KP_0,
+        KpPeriod => XK_KP_Separator,
+        F13 => XK_F13,
+        F14 => XK_F14,
+        F15 => XK_F15,
+        F16 => XK_F16,
+        F17 => XK_F17,
+        F18 => XK_F18,
+        F19 => XK_F19,
+        F20 => XK_F20,
+        F21 => XK_F21,
+        F22 => XK_F22,
+        F23 => XK_F23,
+        F24 => XK_F24,
+        Menu => XK_Menu,
+        Sysreq => XK_Sys_Req,
+        LCtrl => XK_Control_L,
+        LShift => XK_Shift_L,
+        LAlt => XK_Alt_L,
+        LGui => XK_Super_L,
+        RCtrl => XK_Control_R,
+        RShift => XK_Shift_R,
+        RAlt => XK_Alt_R,
+        RGui => XK_Super_R,
+        _ => 0
+    };
+    if x11code != 0 { Some(x11code as u32) } else { None }
+}
+

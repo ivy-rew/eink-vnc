@@ -1,3 +1,11 @@
+# Building
+
+I've had success with the following commands
+
+docker pull ewpratten/kobo-cross-armhf:latest
+cargo install cross
+cross build --target arm-unknown-linux-musleabihf
+
 # eInk VNC
 
 A lightweight CLI (command line interface) tool to view a remote screen over VNC, designed to work on eInk screens.

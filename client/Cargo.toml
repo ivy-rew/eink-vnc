@@ -21,6 +21,8 @@ flate2 = "1.0.24"
 nix = "0.24.2"
 anyhow = "1.0.58"
 fxhash = "0.2.1"
+sdl2 = "0.13"
+x11 = "2.3"
 
 [profile.release-minsized]
 inherits = "release"
