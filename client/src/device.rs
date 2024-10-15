@@ -190,6 +190,12 @@ impl Device {
                 dims: (1404, 1872),
                 dpi: 227,
             },
+            "condor" => Device {
+                model: Model::Elipsa,
+                proto: TouchProto::MultiC,
+                dims: (1404, 1872),
+                dpi: 227,
+            },
             "cadmus" => Device {
                 model: Model::Sage,
                 proto: TouchProto::MultiC,
