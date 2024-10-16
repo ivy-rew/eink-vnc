@@ -28,7 +28,7 @@ jobs:
         override: true
         target: arm-unknown-linux-gnueabihf
     - name: Build
-      run: cd client && ./build.sh slow
+      run: cd client && ./build.sh
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
