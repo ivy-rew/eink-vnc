@@ -15,9 +15,9 @@ jobs:
       with:
         submodules: recursive
     - name: Build
-      run: make distclean && make ci CROSS_TC=arm-kobo-linux-gnueabihf
+      run: cd client && ./build.sh
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
-        name: FBInk
-        path: Release/FBInk-*.tar.gz
+        name: eInkVnc
+        path: Release/einkvnc-*.tar.gz
