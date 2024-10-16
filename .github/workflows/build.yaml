@@ -16,6 +16,8 @@ jobs:
         submodules: recursive
     - name: RustEnv
       run: rustup target add arm-unknown-linux-gnueabihf
+    - name: Linker
+      run: sudo apt-get -y install gcc-arm* libstdc++-12-dev
     - name: Build
       run: cd client && ./build.sh
     - name: Upload release archive
