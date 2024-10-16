@@ -14,8 +14,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: RustEnv
-      run: rustup target add arm-unknown-linux-gnueabihf
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        target: arm-unknown-linux-gnueabihf
     - name: Linker
       run: sudo apt-get -y install gcc-arm* libstdc++-12-dev-armhf-cross build-essential autoconf automake bison flex gawk libtool libtool-bin libncurses-dev curl file git gperf help2man texinfo unzip wget
     - name: Build
