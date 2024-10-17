@@ -6,12 +6,16 @@ jobs:
     name: einkvnc
     runs-on: ubuntu-latest
     steps:
+    - name: Show GLIBC
+      run: ldd --version
     - name: Linker
       run: sudo apt-get -y install gcc-arm* libstdc++-11-dev-armhf-cross build-essential autoconf automake bison flex gawk libtool libtool-bin libncurses-dev curl file git gperf help2man texinfo unzip wget
     - name: Download toolchain
       run: wget -q https://github.com/koreader/koxtoolchain/releases/latest/download/kobo.tar.gz -O - | tar -xzf - -C ~
     - name: Export toolchain
       run: echo ~/x-tools/arm-kobo-linux-gnueabihf/bin >> $GITHUB_PATH
+    - name: Show GLIBC
+      run: ldd --version
     - name: Checkout
       uses: actions/checkout@v4
       with:
