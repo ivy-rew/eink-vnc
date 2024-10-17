@@ -15,7 +15,7 @@ jobs:
     - name: Export toolchain
       run: echo "$HOME/x-tools/arm-kobo-linux-gnueabihf/bin" >> $GITHUB_PATH && ls -la $HOME/x-tools/arm-kobo-linux-gnueabihf/bin && $HOME/x-tools/arm-kobo-linux-gnueabihf/bin/arm-kobo-linux-gnueabihf-gcc --version
     - name: Show GLIBC and Linker
-      run: echo $PATH && ls -la $HOME/x-tools/arm-kobo-linux-gnueabihf/bin/ && $HOME/x-tools/arm-kobo-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc --version && ldd --version && arm-linux-gnueabihf-gcc --version
+      run: ldd --version && arm-kobo-linux-gnueabihf-gcc --version
     - name: Checkout
       uses: actions/checkout@v4
       with:
@@ -28,7 +28,7 @@ jobs:
         override: true
         target: arm-unknown-linux-gnueabihf
     - name: Build
-      run: PATH=~/x-tools/arm-kobo-linux-gnueabihf/bin:$PATH && cd client && ./build.sh
+      run: ln -s $HOME/x-tools/arm-kobo-linux-gnueabihf/bin/arm-kobo-linux-gnueabihf-gcc $HOME/x-tools/arm-kobo-linux-gnueabihf/bin/arm-linux-gnueabihf && cd client && ./build.sh
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
