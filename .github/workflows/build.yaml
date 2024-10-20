@@ -22,11 +22,11 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
-        target: arm-unknown-linux-gnueabihf
+        target: arm-unknown-linux-musleabihf
     - name: Build
-      run: cd client && ./build.sh
+      run: cargo install cross && cd client && ./build.sh
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
         name: eInkVnc
-        path: client/target/arm-unknown-linux-gnueabihf/release/einkvnc*
+        path: client/target/arm-unknown-linux-musleabihf/release/einkvnc*
