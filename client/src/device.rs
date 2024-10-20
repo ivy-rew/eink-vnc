@@ -393,7 +393,7 @@ lazy_static! {
     pub static ref CURRENT_DEVICE: Device = {
         let product = env::var("PRODUCT").unwrap_or_default();
         let model_number = env::var("MODEL_NUMBER").unwrap_or_default();
-
+        debug!("model initialized {:?}", product);
         Device::new(&product, &model_number)
     };
 }

@@ -188,6 +188,13 @@ fn main() -> Result<(), Error> {
     .unwrap();
 
     #[cfg(feature = "eink_device")]
+    info!(
+        "running on device model=\"{}\" /dpi={} /dims={}x{}", 
+        CURRENT_DEVICE.model,
+        CURRENT_DEVICE.dpi,
+        CURRENT_DEVICE.dims.0,
+        CURRENT_DEVICE.dims.1
+    );
     let mut fb: Box<dyn Framebuffer> = if CURRENT_DEVICE.mark() != 8 {
         Box::new(
             KoboFramebuffer1::new(FB_DEVICE)
