@@ -83,6 +83,11 @@ pub enum FrontlightKind {
 
 impl Device {
     pub fn new(product: &str, model_number: &str) -> Device {
+        info!(
+            "matching device /product=\"{}\" /model_number={}", 
+            product,
+            model_number
+        );
         match product {
             "kraken" => Device {
                 model: Model::Glo,
@@ -185,6 +190,12 @@ impl Device {
                 dpi: 212,
             },
             "europa" => Device {
+                model: Model::Elipsa,
+                proto: TouchProto::MultiC,
+                dims: (1404, 1872),
+                dpi: 227,
+            },
+            "condor" => Device {
                 model: Model::Elipsa,
                 proto: TouchProto::MultiC,
                 dims: (1404, 1872),
