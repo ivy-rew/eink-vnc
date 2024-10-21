@@ -2,9 +2,11 @@
 
 I've had success with the following commands
 
+```
 docker pull ewpratten/kobo-cross-armhf:latest
 cargo install cross
 cross build --target arm-unknown-linux-musleabihf
+```
 
 # eInk VNC
 
