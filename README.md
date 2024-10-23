@@ -8,6 +8,18 @@ cargo install cross
 cross build --target arm-unknown-linux-musleabihf
 ```
 
+Steps from scratch....
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add arm-unknown-linux-musleabihf
+rustup update
+cd client
+cargo build --target=arm-unknown-linux-musleabihf
+```
+
+Compilation currently fails on a linker error - that's a work in progress.
+
 # eInk VNC
 
 A lightweight CLI (command line interface) tool to view a remote screen over VNC, designed to work on eInk screens.
@@ -16,8 +28,22 @@ For now, you can only view, so you'll have to connect a keyboard to the serving 
 This tool has been confirmed to work on the Kobo Libra 2, and should work on all Kobo devices.
 It was optimized for text based workflows (document reading and writing), doing that it achieves a framerate of 30 fps.
 
-**It has only been confirmed to work with TightVNC as the server.**
+**It has only been confirmed to work with TightVNC as the server.  Sort of.**
 Due to the unusual pixel format.
+
+The source in the repository has "worked" on other VNC servers - tigervnc
+in particular.  I coded a dirty RGBA to greyscale converter
+
+```
+                    let scale_down =
+                        pixels
+                            .iter()
+                            .step_by(4)
+                            .map(|&c| post_proc_bin.data[c as usize])
+                            .collect();
+```
+
+i.e., the output color is basically the red channel.
 
 ## Warning
 
