@@ -18,7 +18,14 @@ cd client
 cargo build --target=arm-unknown-linux-musleabihf
 ```
 
-Compilation currently fails on a linker error - that's a work in progress.
+Compilation currently fails on a linker error - /usr/bin/ld: /home/andrew/.rustup/toolchains/stable-aarch64-unknown-linux-gnu/lib/rustlib/arm-unknown-linux-musleabihf/lib/self-contained/crt1.o: error adding symbols: file in wrong format
+ 
+/usr/bin/ld is obviously the wrong linker.  But, also, a copy of the 
+arm-unknown-linux-musleabihf SDL2 library is needed...  Possibly in 
+.rustup/toolchains/stable-aarch64-unknown-linux-gnu/lib/rustlib/arm-unknown-linux-musleabihf/lib/self-contained, or maybe
+just somewhere that the cross compiler knows about it.
+
+Trying https://wiki.osdev.org/Building_GCC
 
 # eInk VNC
 
