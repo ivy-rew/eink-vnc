@@ -3,8 +3,8 @@ extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
-use sdl2::pixels::{Color, PixelMasks, PixelFormatEnum as SdlPixelFormat};
-use sdl2::rect::Rect as SdlRect;
+//use sdl2::pixels::{Color, PixelMasks, PixelFormatEnum as SdlPixelFormat};
+//use sdl2::rect::Rect as SdlRect;
 
 mod device;
 mod framebuffer;
@@ -100,10 +100,10 @@ fn main() -> Result<(), Error> {
     let white_cutoff = value_t!(matches.value_of("WHITECUTOFF"), u8).unwrap_or(255);
     let exclusive = matches.is_present("EXCLUSIVE");
 
-    let sdl_context = sdl2::init().unwrap();
-    let sdl_video = sdl_context.video().unwrap();
-    let mut sdl_timer = sdl_context.timer().unwrap();
-    let mut sdl_events = sdl_context.event_pump().unwrap();
+    //let sdl_context = sdl2::init().unwrap();
+    //let sdl_video = sdl_context.video().unwrap();
+    //let mut sdl_timer = sdl_context.timer().unwrap();
+    //let mut sdl_events = sdl_context.event_pump().unwrap();
 
     info!("connecting to {}:{}", host, port);
     let stream = match std::net::TcpStream::connect((host, port)) {
@@ -254,7 +254,7 @@ fn main() -> Result<(), Error> {
 
     'running: loop {
         let time_at_sol = Instant::now();
-        let ticks = sdl_timer.ticks();
+        //let ticks = sdl_timer.ticks();
 
         for event in vnc.poll_iter() {
             use client::Event;
@@ -433,6 +433,7 @@ fn main() -> Result<(), Error> {
             }
         }
 
+/*
         if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
             if dirty_rects_since_refresh.len() > 0 && time_at_last_draw.elapsed().as_secs() > 3 {
                 for dr in &dirty_rects_since_refresh {
@@ -456,6 +457,7 @@ fn main() -> Result<(), Error> {
                 time_at_sol.elapsed().as_millis() as u64 - FRAME_MS
             );
         }
+*/
 
         vnc.request_update(
             Rect {
@@ -468,10 +470,10 @@ fn main() -> Result<(), Error> {
         )
         .unwrap();
 
-    for event in sdl_events.wait_timeout_iter(sdl_timer.ticks() - ticks + FRAME_MS_U32 ) {
-            use sdl2::event::{Event, WindowEventId};
-
 /*
+    for event in sdl_events.wait_timeout_iter(sdl_timer.ticks() - ticks + FRAME_MS_U32 ) {
+            //use sdl2::event::{Event, WindowEventId};
+
             match event {
                 Event::Quit { .. } => break 'running,
                 Event::Window { win_event_id: WindowEventId::SizeChanged, .. } => {
@@ -486,6 +488,7 @@ fn main() -> Result<(), Error> {
             if view_only { continue }
 */
 
+/*
             match event {
                 Event::KeyDown { keycode: Some(keycode), .. } |
                 Event::KeyUp { keycode: Some(keycode), .. } => {
@@ -548,7 +551,7 @@ fn main() -> Result<(), Error> {
                 _ => ()
             }
         }
-
+*/
 
     }
 
@@ -573,6 +576,7 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     list.push(rect);
 }
 
+/*
 fn map_special_key(alnum_ok: bool, keycode: sdl2::keyboard::Keycode) -> Option<u32> {
     use sdl2::keyboard::Keycode::*;
     use x11::keysym::*;
@@ -721,4 +725,5 @@ fn map_special_key(alnum_ok: bool, keycode: sdl2::keyboard::Keycode) -> Option<u
     };
     if x11code != 0 { Some(x11code as u32) } else { None }
 }
+*/
 

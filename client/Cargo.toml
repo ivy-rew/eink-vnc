@@ -21,8 +21,8 @@ flate2 = "1.0.24"
 nix = "0.24.2"
 anyhow = "1.0.58"
 fxhash = "0.2.1"
-sdl2 = "0.13"
 x11 = "2.3"
+evdev = "0.12"
 
 [profile.release-minsized]
 inherits = "release"
@@ -35,3 +35,12 @@ strip = true
 [features]
 default = ["eink_device"]
 eink_device = []
+
+#[workspace.metadata.cross.target.arm-unknown-linux-musleabihf]
+#pre-build = [
+#    "dpkg --add-architecture $CROSS_DEB_ARCH",
+#    "apt-get update && apt-get --assume-yes install libsdl2-dev:$CROSS_DEB_ARCH"
+#]
+
+#image = "my/kobo_sdl2:latest"
+
