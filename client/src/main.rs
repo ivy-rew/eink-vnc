@@ -22,10 +22,7 @@ use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
-use std::thread;
-use std::time::Duration;
 use std::time::Instant;
-use vnc::PixelFormat;
 
 use anyhow::{Context as ResultExt, Error};
 
@@ -248,9 +245,9 @@ fn main() -> Result<(), Error> {
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
     let post_proc_enabled = contrast_exp != 1.0;
-    let mut key_ctrl = false;
-    let (mut mouse_x,   mut mouse_y)   = (0u16, 0u16);
-    let mut mouse_buttons = 0u8;
+    let key_ctrl = false;
+    let (mouse_x,   mouse_y)   = (0u16, 0u16);
+    let mouse_buttons = 0u8;
 
     'running: loop {
         let time_at_sol = Instant::now();
