@@ -22,6 +22,8 @@ use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
+use std::thread;
+use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::{Context as ResultExt, Error};
@@ -430,7 +432,6 @@ fn main() -> Result<(), Error> {
             }
         }
 
-/*
         if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
             if dirty_rects_since_refresh.len() > 0 && time_at_last_draw.elapsed().as_secs() > 3 {
                 for dr in &dirty_rects_since_refresh {
@@ -454,7 +455,6 @@ fn main() -> Result<(), Error> {
                 time_at_sol.elapsed().as_millis() as u64 - FRAME_MS
             );
         }
-*/
 
         vnc.request_update(
             Rect {
