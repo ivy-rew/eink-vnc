@@ -35,12 +35,5 @@ strip = true
 [features]
 default = ["eink_device"]
 eink_device = []
-
-#[workspace.metadata.cross.target.arm-unknown-linux-musleabihf]
-#pre-build = [
-#    "dpkg --add-architecture $CROSS_DEB_ARCH",
-#    "apt-get update && apt-get --assume-yes install libsdl2-dev:$CROSS_DEB_ARCH"
-#]
-
-#image = "my/kobo_sdl2:latest"
+apple-auth = []
 

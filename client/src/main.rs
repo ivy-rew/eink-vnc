@@ -233,7 +233,7 @@ fn main() -> Result<(), Error> {
     };
 
     const FRAME_MS: u64 = 1000 / 30;
-    const FRAME_MS_U32: u32 = 1000 / 30;
+    //const FRAME_MS_U32: u32 = 1000 / 30;
 
     const MAX_DIRTY_REFRESHES: usize = 500;
 
@@ -247,9 +247,9 @@ fn main() -> Result<(), Error> {
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
     let post_proc_enabled = contrast_exp != 1.0;
-    let key_ctrl = false;
-    let (mouse_x,   mouse_y)   = (0u16, 0u16);
-    let mouse_buttons = 0u8;
+    //let key_ctrl = false;
+    //let (mouse_x,   mouse_y)   = (0u16, 0u16);
+    //let mouse_buttons = 0u8;
 
     'running: loop {
         let time_at_sol = Instant::now();
