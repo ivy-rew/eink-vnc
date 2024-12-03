@@ -3,8 +3,8 @@ extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
-//use sdl2::pixels::{Color, PixelMasks, PixelFormatEnum as SdlPixelFormat};
-//use sdl2::rect::Rect as SdlRect;
+use sdl2::pixels::{Color, PixelMasks, PixelFormatEnum as SdlPixelFormat};
+use sdl2::rect::Rect as SdlRect;
 
 mod device;
 mod framebuffer;

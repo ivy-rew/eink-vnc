@@ -23,6 +23,7 @@ anyhow = "1.0.58"
 fxhash = "0.2.1"
 x11 = "2.3"
 evdev = "0.12"
+sdl2 = "0.37.0"
 
 [profile.release-minsized]
 inherits = "release"
