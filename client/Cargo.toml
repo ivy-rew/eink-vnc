@@ -21,6 +21,8 @@ flate2 = "1.0.24"
 nix = "0.24.2"
 anyhow = "1.0.58"
 fxhash = "0.2.1"
+x11 = "2.3"
+evdev = "0.12"
 
 [profile.release-minsized]
 inherits = "release"
@@ -33,3 +35,5 @@ strip = true
 [features]
 default = ["eink_device"]
 eink_device = []
+apple-auth = []
+
