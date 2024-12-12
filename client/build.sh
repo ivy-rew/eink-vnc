@@ -60,4 +60,4 @@ skip) ;;
     ;;
 esac
 
-cross build --release --target=arm-unknown-linux-musleabihf
+cross build --release --target=arm-unknown-linux-gnueabihf
