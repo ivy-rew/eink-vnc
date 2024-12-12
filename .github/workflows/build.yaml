@@ -4,7 +4,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build_fbink:
     name: einkvnc
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -16,13 +16,15 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
-        target: arm-unknown-linux-musleabihf
+        target: arm-unknown-linux-gnueabihf
     - name: Install Cross
       run: cargo install cross
+    - name: Install SDL2
+      run: sudo apt install libsdl2-dev
     - name: Build
       run: cd client && ./build.sh
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
         name: eInkVnc
-        path: client/target/arm-unknown-linux-musleabihf/release/einkvnc
+        path: client/target/arm-unknown-linux-gnueabihf/release/einkvnc
