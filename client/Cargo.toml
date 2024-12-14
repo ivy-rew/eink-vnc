@@ -21,6 +21,9 @@ flate2 = "1.0.24"
 nix = "0.24.2"
 anyhow = "1.0.58"
 fxhash = "0.2.1"
+evdev-rs = "0.6.1"
+chrono = "0.4.39"
+nalgebra = "0.33.2"
 
 [profile.release-minsized]
 inherits = "release"
