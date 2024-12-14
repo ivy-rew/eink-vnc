@@ -19,6 +19,7 @@ pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
+use crate::touch::Touch;
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
 use std::f64::consts::E;
@@ -26,6 +27,7 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
+use std::sync::mpsc::{self, Sender, Receiver};
 use vnc::PixelFormat;
 use touch::TouchEventListener;
 use crate::coords::PixelSpaceCoord;
@@ -40,12 +42,38 @@ pub struct PostProcBin {
     data: [u8; 256],
 }
 
-pub fn touch_events(size: PixelSpaceCoord){
+pub fn t_produce(paths: PixelSpaceCoord) -> (Sender<Touch>, Receiver<Touch>) {
+    let (tx, rx) = mpsc::channel();
+    let tx2 = tx.clone();
+    thread::spawn(move || touch_events(paths, tx));
+    (tx2, rx)
+}
+
+// pub fn t_events(rx: Receiver<Touch>) -> Receiver<Touch> {
+//     let (ty, ry) = mpsc::channel();
+//     thread::spawn(move || parse_touch(&rx, &ty));
+//     ry
+// }
+
+// pub fn parse_touch(rx: &Receiver<Touch>, ty: &Sender<Touch>) {
+//     while let Ok(evt) = rx.recv() {
+//         println!("evt processing");
+//         ty.send(evt).ok();
+//     }
+// }
+
+pub fn touch_events(size: PixelSpaceCoord, rx: Sender<Touch>){
     let screen = TouchEventListener::open().unwrap();
     loop {
         match screen.next_touch(size, None){
             Some(t) => {
-                info!("got touch !{}", t.position);
+                rx.send(t.clone()).ok();
+                //info!("got touch !{}", t.position);
+                
+                // match rx.recv() {
+                //     Ok(f) => {},
+                //     Err(f) => {}
+                // };
                 //vnc.send_pointer_event(0, 10, 10);
             },
             None => {}
@@ -213,9 +241,28 @@ fn main() -> Result<(), Error> {
         vnc.send_pointer_event(0, 100, 100);
     };
 
-    thread::spawn(move || {
-        touch_events(size)
-    });
+    let t_produce = t_produce(size);
+
+
+
+
+    //let cr: &Client = &*vnc;
+    // thread::spawn(move || {
+    //     match t_produce.1.recv() {
+    //         Ok(t) => {
+    //             println!("toucheeee {}", t.position );
+    //             //vnc.send_pointer_event(0, 200, 200);
+    //         },
+    //         Err(e) => println!("fail...")
+    //     }
+    // });
+    // while t_produce.1.recv() {
+    //     Touch(t) > println!("so touchy")
+    // }
+    // let (ty, ry) = mpsc::channel();
+    // thread::spawn(move || {
+    //     touch_events(size, ry)
+    // });
 
     #[cfg(feature = "eink_device")]
     debug!(
@@ -293,9 +340,14 @@ fn main() -> Result<(), Error> {
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
     let post_proc_enabled = contrast_exp != 1.0;
-
+    let screen = TouchEventListener::open().unwrap();
     'running: loop {
         let time_at_sol = Instant::now();
+        
+        
+        // for t in screen.next_touch(size, None).iter() {
+        //     println!("touchinator {}", t.position);
+        // }
 
         for event in vnc.poll_iter() {
             use client::Event;
