@@ -14,17 +14,24 @@ mod settings;
 mod vnc;
 mod touch;
 mod coords;
+mod gesture;
+mod unit;
 
+use std::sync::mpsc::{self, Sender, Receiver};
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use clap::{value_t, App, Arg};
+use device::Model;
 use log::{debug, error, info};
 use std::f64::consts::E;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
+
+use input::device_events;
+use gesture::gesture_events;
 
 use vnc::PixelFormat;
 use touch::TouchEventListener;
@@ -191,10 +198,61 @@ fn main() -> Result<(), Error> {
     );
 
     println!("touch to play vnc");
+    
     let touch = match touchscreen.next_touch(size, None){
         Some(t) => info!("got first touch !{}", t.position),
         None => {}
     };
+
+    //device_events();
+
+    const TOUCH_INPUTS: [&str; 5] = ["/dev/input/by-path/platform-2-0010-event",
+    "/dev/input/by-path/platform-1-0038-event",
+    "/dev/input/by-path/platform-1-0010-event",
+    "/dev/input/by-path/platform-0-0010-event",
+    "/dev/input/event1"];
+    const BUTTON_INPUTS: [&str; 4] = ["/dev/input/by-path/platform-gpio-keys-event",
+    "/dev/input/by-path/platform-ntx_event0-event",
+    "/dev/input/by-path/platform-mxckpd-event",
+    "/dev/input/event0"];
+const POWER_INPUTS: [&str; 3] = ["/dev/input/by-path/platform-bd71828-pwrkey.6.auto-event",
+   "/dev/input/by-path/platform-bd71828-pwrkey.4.auto-event",
+   "/dev/input/by-path/platform-bd71828-pwrkey-event"];
+
+   let mut paths = Vec::new();
+   for ti in &TOUCH_INPUTS {
+       if Path::new(ti).exists() {
+           paths.push(ti.to_string());
+           break;
+       }
+   }
+   for bi in &BUTTON_INPUTS {
+       if Path::new(bi).exists() {
+           paths.push(bi.to_string());
+           break;
+       }
+   }
+   for pi in &POWER_INPUTS {
+       if Path::new(pi).exists() {
+           paths.push(pi.to_string());
+           break;
+       }
+   }
+
+    let (raw_sender, raw_receiver) = raw_events(paths);
+    let touch_screen = gesture_events(device_events(raw_receiver, context.display, context.settings.button_scheme));
+    let usb_port = usb_events();
+
+    let (tx, rx) = mpsc::channel();
+    let tx2 = tx.clone();
+
+    thread::spawn(move || {
+        while let Ok(evt) = touch_screen.recv() {
+            info!("device event");
+            tx2.send(evt).ok();
+        }
+    });
+
 
     #[cfg(feature = "eink_device")]
     debug!(
