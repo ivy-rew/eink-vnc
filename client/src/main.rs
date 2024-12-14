@@ -12,6 +12,8 @@ mod input;
 mod security;
 mod settings;
 mod vnc;
+mod touch;
+mod coords;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
@@ -19,11 +21,14 @@ use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
+use std::f64::consts::E;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-use vnc::PixelFormat;
 
+use vnc::PixelFormat;
+use touch::TouchEventListener;
+use crate::coords::PixelSpaceCoord;
 use anyhow::{Context as ResultExt, Error};
 
 use crate::device::CURRENT_DEVICE;
@@ -33,6 +38,16 @@ const FB_DEVICE: &str = "/dev/fb0";
 #[repr(align(256))]
 pub struct PostProcBin {
     data: [u8; 256],
+}
+
+pub fn touch_events(size: PixelSpaceCoord){
+    let screen = TouchEventListener::open().unwrap();
+    loop {
+        let touch = match screen.next_touch(size, None){
+            Some(t) => info!("got touch !{}", t.position),
+            None => {}
+        };
+    }
 }
 
 fn main() -> Result<(), Error> {
@@ -112,6 +127,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
+
     let mut vnc = match Client::from_tcp_stream(stream, !exclusive, |methods| {
         debug!("available authentication methods: {:?}", methods);
         for method in methods {
@@ -176,6 +192,18 @@ fn main() -> Result<(), Error> {
         false,
     )
     .unwrap();
+
+
+    
+    let size: PixelSpaceCoord = PixelSpaceCoord::new(
+        vnc.size().0.into(), 
+        vnc.size().1.into()
+    );
+
+    
+    thread::spawn(move || {
+        touch_events(size)
+    });
 
     #[cfg(feature = "eink_device")]
     debug!(
@@ -259,6 +287,13 @@ fn main() -> Result<(), Error> {
 
         for event in vnc.poll_iter() {
             use client::Event;
+
+            // let t = touchscreen.next_touch(size, None).take();
+            // println!("got more touches !{}", t.or(optb).position);
+            // {
+            //     Some(t) => println!("got first touch !{}", t.position),
+            //     None => {}
+            // };
 
             match event {
                 Event::Disconnected(None) => break 'running,
