@@ -43,8 +43,11 @@ pub struct PostProcBin {
 pub fn touch_events(size: PixelSpaceCoord){
     let screen = TouchEventListener::open().unwrap();
     loop {
-        let touch = match screen.next_touch(size, None){
-            Some(t) => info!("got touch !{}", t.position),
+        match screen.next_touch(size, None){
+            Some(t) => {
+                info!("got touch !{}", t.position);
+                //vnc.send_pointer_event(0, 10, 10);
+            },
             None => {}
         };
     }
@@ -182,6 +185,9 @@ fn main() -> Result<(), Error> {
     vnc.set_encodings(&[Encoding::CopyRect, Encoding::Zrle])
         .unwrap();
 
+        // works!
+    vnc.send_pointer_event(0, 100, 100);
+
     vnc.request_update(
         Rect {
             left: 0,
@@ -193,14 +199,20 @@ fn main() -> Result<(), Error> {
     )
     .unwrap();
 
-
+    //let vnc2 = vnc;
     
     let size: PixelSpaceCoord = PixelSpaceCoord::new(
         vnc.size().0.into(), 
         vnc.size().1.into()
     );
 
-    
+//    let vnc2: &Client = &*vnc;
+
+    let point_to = {
+        info!("hey hey");
+        vnc.send_pointer_event(0, 100, 100);
+    };
+
     thread::spawn(move || {
         touch_events(size)
     });
