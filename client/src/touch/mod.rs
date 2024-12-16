@@ -19,13 +19,6 @@ pub struct Touch {
     pub button: Option<i32>,
 }
 
-impl Touch {
-    /// Checks if the touch is a finger-down event
-    pub fn is_down(&self) -> bool {
-        self.pressure > 0
-    }
-}
-
 /// Blocking event listener for touch events
 pub struct TouchEventListener {
     device: Device,

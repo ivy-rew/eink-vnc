@@ -295,7 +295,7 @@ fn main() -> Result<(), Error> {
                 vnc.send_pointer_event(last_button.clone(),
                     t.position[0].try_into().unwrap(),
                     t.position[1].try_into().unwrap()
-                );
+                ).unwrap();
             }
             touch_arc.lock().unwrap().clear();
         }
