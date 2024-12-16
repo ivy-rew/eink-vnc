@@ -13,14 +13,12 @@ mod security;
 mod settings;
 mod vnc;
 mod touch;
-mod coords;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
-use crate::touch::{Touch, TouchEventListener};
-use crate::coords::PixelSpaceCoord;
+use crate::touch::{Touch, TouchEventListener, PixelSpaceCoord};
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
 use std::str::FromStr;
@@ -285,7 +283,7 @@ fn main() -> Result<(), Error> {
         
         if touch_enabled {
             for t in touch_arc.lock().unwrap().iter() {
-                if (t.button.is_some()) {
+                if t.button.is_some() {
                     let m = match t.button.unwrap() {
                         1 => MOUSE_LEFT,
                         0 => MOUSE_UNKNOWN,

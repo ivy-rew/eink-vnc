@@ -3,7 +3,8 @@ use std::{alloc::System, fs::File, str::FromStr};
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
 
-use crate::{coords::PixelSpaceCoord, touch};
+mod coords;
+pub use self::coords::PixelSpaceCoord;
 
 /// Describes a touch event.
 #[derive(Debug, Clone)]
