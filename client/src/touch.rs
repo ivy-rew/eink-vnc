@@ -3,7 +3,7 @@ use std::{alloc::System, fs::File, str::FromStr};
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
 
-use crate::coords::PixelSpaceCoord;
+use crate::{coords::PixelSpaceCoord, touch};
 
 /// Describes a touch event.
 #[derive(Debug, Clone)]
@@ -14,6 +14,8 @@ pub struct Touch {
     pub pressure: i32,
     /// The timestamp of the touch event
     pub timestamp: DateTime<Utc>,
+
+    pub button: Option<i32>,
 }
 
 impl Touch {
@@ -66,6 +68,8 @@ impl TouchEventListener {
         let mut x = None;
         let mut y = None;
         let mut pressure = None;
+        let mut button: Option<i32> = None;
+        let mut syn: Option<i32> = None;
 
         // Loop through the incoming event stream
         loop {
@@ -79,7 +83,6 @@ impl TouchEventListener {
 
             // Read the next event
             let (status, event) = self.next_raw_event().unwrap();
-
 
             // Check the status
             if status == ReadStatus::Success {
@@ -106,17 +109,30 @@ impl TouchEventListener {
                         }
                         _ => {}
                     },
+                    evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
+                        evdev_rs::enums::EV_KEY::BTN_TOUCH => {
+                            button = Some(event.value);
+                        }
+                        _ => {}
+                    },
+                    evdev_rs::enums::EventCode::EV_SYN(kind) => match kind {
+                        evdev_rs::enums::EV_SYN::SYN_REPORT => {
+                            syn = Some(event.value); // mouse state complete 
+                        }
+                        _ => {}
+                    },
                     _ => { /* Unused */ }
                 }
             }
 
             // Check if we have all the data
-            if x.is_some() && y.is_some() && pressure.is_some() {
+            if x.is_some() && y.is_some() && pressure.is_some() && syn.is_some() {
                 // Return the touch event
                 return Some(Touch {
                     position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
+                    button: button
                 });
             }
         }

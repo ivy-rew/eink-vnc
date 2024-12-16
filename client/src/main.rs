@@ -278,6 +278,8 @@ fn main() -> Result<(), Error> {
     const MOUSE_LEFT: u8 = 0x01;
     const MOUSE_UNKNOWN: u8 = 0x00;
 
+    let mut last_button: u8 = MOUSE_UNKNOWN;
+
     'running: loop {
         let time_at_sol = Instant::now();
         
@@ -285,8 +287,16 @@ fn main() -> Result<(), Error> {
             match touch_arc.lock().unwrap().remove(1) {
                 None => {},
                 Some(t)  => {
-                    vnc.send_pointer_event(MOUSE_LEFT, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
-                    vnc.send_pointer_event(MOUSE_UNKNOWN, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
+                    if (t.button.is_some()) {
+                        let m = match t.button.unwrap() {
+                            1 => MOUSE_LEFT,
+                            0 => MOUSE_UNKNOWN,
+                            i32::MIN..=-1_i32 | 
+                            2_i32..=i32::MAX => MOUSE_UNKNOWN
+                        };
+                        last_button = m;
+                    }
+                    vnc.send_pointer_event(last_button.clone(), t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
                 }
             }
         }
