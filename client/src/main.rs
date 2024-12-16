@@ -292,6 +292,13 @@ fn main() -> Result<(), Error> {
                     };
                     last_button = m;
                 }
+                if t.distance.is_some() && t.distance.unwrap().is_positive() {
+                    if (last_button == MOUSE_LEFT) {
+                         // do not press on "almost" touching pen
+                         // but preserve the last_button for next fully touching event
+                        continue;
+                    }
+                }
                 vnc.send_pointer_event(last_button.clone(),
                     t.position[0].try_into().unwrap(),
                     t.position[1].try_into().unwrap()
