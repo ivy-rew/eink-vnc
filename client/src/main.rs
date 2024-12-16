@@ -26,8 +26,10 @@ use std::f64::consts::E;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::mpsc::{self, Sender, Receiver};
+use std::collections::{vec_deque, VecDeque};
 use vnc::PixelFormat;
 use touch::TouchEventListener;
 use crate::coords::PixelSpaceCoord;
@@ -353,14 +355,16 @@ fn main() -> Result<(), Error> {
         }
     });
 
-    
+    let points: VecDeque<Touch> = VecDeque::new();
+    let touch_arc: Arc<Mutex<VecDeque<Touch>>> = Arc::new(Mutex::new(points));
 
+    let ta2 = touch_arc.clone();
     thread::spawn(move || {
         loop {
             match rx.recv() {
                 Ok(touch) => {
                     println!("touched on screen {}", touch.position);
-                    
+                    ta2.lock().unwrap().push_back(touch);
                 },
                 Err(e) => {}
             }
@@ -372,20 +376,16 @@ fn main() -> Result<(), Error> {
     'running: loop {
         let time_at_sol = Instant::now();
         
-        
-        // for t in screen.next_touch(size, None).iter() {
-        //     println!("touchinator {}", t.position);
-        // }
+        match touch_arc.lock().unwrap().remove(1) {
+            None => {},
+            Some(t)  => {
+                vnc.send_pointer_event(0, t.position[1].try_into().unwrap(), t.position[0].try_into().unwrap());
+            }
+        }
 
         for event in vnc.poll_iter() {
             use client::Event;
 
-            // let t = touchscreen.next_touch(size, None).take();
-            // println!("got more touches !{}", t.or(optb).position);
-            // {
-            //     Some(t) => println!("got first touch !{}", t.position),
-            //     None => {}
-            // };
 
             match event {
                 Event::Disconnected(None) => break 'running,
