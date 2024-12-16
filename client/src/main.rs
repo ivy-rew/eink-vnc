@@ -282,7 +282,7 @@ fn main() -> Result<(), Error> {
             match touch_arc.lock().unwrap().remove(1) {
                 None => {},
                 Some(t)  => {
-                    vnc.send_pointer_event(0, t.position[1].try_into().unwrap(), t.position[0].try_into().unwrap());
+                    vnc.send_pointer_event(0x1, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
                 }
             }
         }

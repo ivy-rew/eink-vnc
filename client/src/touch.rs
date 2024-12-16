@@ -86,20 +86,17 @@ impl TouchEventListener {
                 // We are looking for ABS touch events
                 match event.event_code {
                     evdev_rs::enums::EventCode::EV_ABS(kind) => match kind {
-                        // Note:
-                        // X and Y are swapped from the event stream
-                        // X is also inverted
                         evdev_rs::enums::EV_ABS::ABS_X => {
-                            y = Some(event.value);
+                            x = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_Y => {
-                            x = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_X => {
                             y = Some(event.value);
                         }
-                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_Y => {
+                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_X => {
                             x = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_Y => {
+                            y = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_PRESSURE => {
                             pressure = Some(event.value);
