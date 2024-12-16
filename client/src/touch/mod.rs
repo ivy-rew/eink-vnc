@@ -2,6 +2,7 @@ use std::{fs::File, str::FromStr};
 
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
+use nalgebra::distance;
 
 mod coords;
 pub use self::coords::PixelSpaceCoord;
@@ -17,6 +18,7 @@ pub struct Touch {
     pub timestamp: DateTime<Utc>,
 
     pub button: Option<i32>,
+    pub distance: Option<i32>,
 }
 
 /// Blocking event listener for touch events
@@ -25,6 +27,7 @@ pub struct TouchEventListener {
 }
 
 impl TouchEventListener {
+
     /// Construct a new `TouchEventListener` by opening the event stream
     pub fn open() -> std::io::Result<Self> {
         // Open the touch device
@@ -63,6 +66,7 @@ impl TouchEventListener {
         let mut pressure = None;
         let mut button: Option<i32> = None;
         let mut syn: Option<i32> = None;
+        let mut distance: Option<i32> = None;
 
         // Loop through the incoming event stream
         loop {
@@ -100,6 +104,9 @@ impl TouchEventListener {
                         evdev_rs::enums::EV_ABS::ABS_MT_PRESSURE => {
                             pressure = Some(event.value);
                         }
+                        evdev_rs::enums::EV_ABS::ABS_MT_DISTANCE => {
+                            distance = Some(event.value);
+                        }
                         _ => {}
                     },
                     evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
@@ -125,7 +132,8 @@ impl TouchEventListener {
                     position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
-                    button: button
+                    button: button,
+                    distance: distance
                 });
             }
         }
