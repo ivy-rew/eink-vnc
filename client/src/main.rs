@@ -340,7 +340,35 @@ fn main() -> Result<(), Error> {
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
     let post_proc_enabled = contrast_exp != 1.0;
-    let screen = TouchEventListener::open().unwrap();
+    
+    
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let screen = TouchEventListener::open().unwrap();
+        loop {
+            match screen.next_touch(size, None) {
+                Some(touch) => tx.send(touch).unwrap(),
+                None => {}
+            };
+        }
+    });
+
+    
+
+    thread::spawn(move || {
+        loop {
+            match rx.recv() {
+                Ok(touch) => {
+                    println!("touched on screen {}", touch.position);
+                    
+                },
+                Err(e) => {}
+            }
+        }
+    });
+
+
+
     'running: loop {
         let time_at_sol = Instant::now();
         
