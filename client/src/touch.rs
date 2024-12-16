@@ -93,13 +93,13 @@ impl TouchEventListener {
                             y = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_Y => {
-                            x = Some(screen_size.x - event.value);
+                            x = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_MT_POSITION_X => {
                             y = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_MT_POSITION_Y => {
-                            x = Some(screen_size.x - event.value);
+                            x = Some(event.value);
                         }
                         evdev_rs::enums::EV_ABS::ABS_PRESSURE => {
                             pressure = Some(event.value);
