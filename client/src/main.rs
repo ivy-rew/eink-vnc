@@ -284,21 +284,22 @@ fn main() -> Result<(), Error> {
         let time_at_sol = Instant::now();
         
         if touch_enabled {
-            match touch_arc.lock().unwrap().remove(1) {
-                None => {},
-                Some(t)  => {
-                    if (t.button.is_some()) {
-                        let m = match t.button.unwrap() {
-                            1 => MOUSE_LEFT,
-                            0 => MOUSE_UNKNOWN,
-                            i32::MIN..=-1_i32 | 
-                            2_i32..=i32::MAX => MOUSE_UNKNOWN
-                        };
-                        last_button = m;
-                    }
-                    vnc.send_pointer_event(last_button.clone(), t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
+            for t in touch_arc.lock().unwrap().iter() {
+                if (t.button.is_some()) {
+                    let m = match t.button.unwrap() {
+                        1 => MOUSE_LEFT,
+                        0 => MOUSE_UNKNOWN,
+                        i32::MIN..=-1_i32 | 
+                        2_i32..=i32::MAX => MOUSE_UNKNOWN
+                    };
+                    last_button = m;
                 }
+                vnc.send_pointer_event(last_button.clone(),
+                    t.position[0].try_into().unwrap(),
+                    t.position[1].try_into().unwrap()
+                );
             }
+            touch_arc.lock().unwrap().clear();
         }
 
         for event in vnc.poll_iter() {
