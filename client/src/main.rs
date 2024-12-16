@@ -275,6 +275,9 @@ fn main() -> Result<(), Error> {
         record_touch_events(size, touch_arc.clone());
     }
 
+    const MOUSE_LEFT: u8 = 0x01;
+    const MOUSE_UNKNOWN: u8 = 0x00;
+
     'running: loop {
         let time_at_sol = Instant::now();
         
@@ -282,7 +285,8 @@ fn main() -> Result<(), Error> {
             match touch_arc.lock().unwrap().remove(1) {
                 None => {},
                 Some(t)  => {
-                    vnc.send_pointer_event(0x1, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
+                    vnc.send_pointer_event(MOUSE_LEFT, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
+                    vnc.send_pointer_event(MOUSE_UNKNOWN, t.position[0].try_into().unwrap(), t.position[1].try_into().unwrap());
                 }
             }
         }
