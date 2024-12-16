@@ -277,6 +277,7 @@ fn main() -> Result<(), Error> {
     const MOUSE_UNKNOWN: u8 = 0x00;
 
     let mut last_button: u8 = MOUSE_UNKNOWN;
+    let mut last_full_touch: Option<Touch> = None;
 
     'running: loop {
         let time_at_sol = Instant::now();
@@ -292,11 +293,23 @@ fn main() -> Result<(), Error> {
                     };
                     last_button = m;
                 }
-                if t.distance.is_some() && t.distance.unwrap().is_positive() {
-                    if (last_button == MOUSE_LEFT) {
-                         // do not press on "almost" touching pen
-                         // but preserve the last_button for next fully touching event
-                        continue;
+                if t.distance.is_some() {
+                    if t.distance.unwrap().is_positive() && t.button.is_some() {
+                        if last_button == MOUSE_LEFT {
+                             // do not press on "almost" touching pen
+                             // but preserve the last_button for next fully touching event
+                            continue;
+                        } else if last_button == MOUSE_UNKNOWN && last_full_touch.is_some() {
+                            let lt = last_full_touch.unwrap();
+                            vnc.send_pointer_event(last_button.clone(),
+                                lt.position[0].try_into().unwrap(),
+                                lt.position[1].try_into().unwrap()
+                            ).unwrap();
+                            last_full_touch = None;
+                            continue;
+                        }
+                    } else {
+                        last_full_touch = Some(t.clone());
                     }
                 }
                 vnc.send_pointer_event(last_button.clone(),
