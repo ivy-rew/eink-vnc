@@ -18,17 +18,15 @@ pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
-use crate::touch::{Touch, TouchEventListener, PixelSpaceCoord};
+use crate::touch::{Touch, TouchEventListener};
 use clap::{value_t, App, Arg};
 use log::{debug, error, info};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::collections::{vec_deque, VecDeque};
-use vnc::PixelFormat;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc;
 use anyhow::{Context as ResultExt, Error};
 
 use crate::device::CURRENT_DEVICE;
@@ -259,35 +257,28 @@ fn main() -> Result<(), Error> {
 
     let post_proc_enabled = contrast_exp != 1.0;
     
-    let points: VecDeque<Touch> = VecDeque::new();
-    let touch_arc: Arc<Mutex<VecDeque<Touch>>> = Arc::new(Mutex::new(points));
     let touch_enabled: bool = std::env::var("KOBO_TOUCH_ENABLED")
             .or(String::from_str("1"))
             .unwrap()
             .eq("1");
-    if touch_enabled {
-        let size: PixelSpaceCoord = PixelSpaceCoord::new(
-            vnc.size().0.into(), 
-            vnc.size().1.into()
-        );
-        record_touch_events(size, touch_arc.clone());
-    }
+    let rx: Receiver<Touch> = if touch_enabled {
+        record_touch_events()
+    } else {
+        mpsc::channel().1 // no-op; never sending anything
+    };
 
     let mut last_button: u8 = MOUSE_UNKNOWN;
 
     'running: loop {
         let time_at_sol = Instant::now();
-        
-        if touch_enabled {
-            for t in touch_arc.lock().unwrap().iter() {
-                last_button = mouse_btn_to_vnc(t.button)
-                    .unwrap_or(last_button);
-                vnc.send_pointer_event(last_button.clone(),
-                    t.position[0].try_into().unwrap(),
-                    t.position[1].try_into().unwrap()
-                ).unwrap();
-            }
-            touch_arc.lock().unwrap().clear();
+    
+        for t in rx.try_iter() {
+            last_button = mouse_btn_to_vnc(t.button)
+                .unwrap_or(last_button);
+            vnc.send_pointer_event(last_button.clone(),
+                t.position[0].try_into().unwrap(),
+                t.position[1].try_into().unwrap()
+            ).unwrap();
         }
 
         for event in vnc.poll_iter() {
@@ -524,19 +515,21 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     list.push(rect);
 }
 
-fn record_touch_events(size: PixelSpaceCoord, touch_arc: Arc<Mutex<VecDeque<Touch>>>) {
+fn record_touch_events() -> Receiver<Touch> {
+    let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         let screen = TouchEventListener::open().unwrap();
         loop {
-            match screen.next_touch(size, None) {
+            match screen.next_touch(None) {
                 Some(touch) => {
                     info!("touched on screen {}", touch.position);
-                    touch_arc.lock().unwrap().push_back(touch);
+                    tx.send(touch).unwrap();
                 },
                 None => {}
             };
         }
     });
+    return rx;
 }
 
 pub const MOUSE_LEFT: u8 = 0x01;

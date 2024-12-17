@@ -1,4 +1,4 @@
-use std::{alloc::System, fs::File, str::FromStr};
+use std::{fs::File, str::FromStr};
 
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
@@ -52,7 +52,6 @@ impl TouchEventListener {
     /// Pressure is currently unreliable, so we'll just assume it's always down.
     pub fn next_touch(
         &self,
-        screen_size: PixelSpaceCoord,
         timeout: Option<Duration>,
     ) -> Option<Touch> {
         // Keep track of the start time
