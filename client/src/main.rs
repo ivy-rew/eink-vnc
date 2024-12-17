@@ -273,9 +273,6 @@ fn main() -> Result<(), Error> {
         record_touch_events(size, touch_arc.clone());
     }
 
-    const MOUSE_LEFT: u8 = 0x01;
-    const MOUSE_UNKNOWN: u8 = 0x00;
-
     let mut last_button: u8 = MOUSE_UNKNOWN;
 
     'running: loop {
@@ -283,15 +280,8 @@ fn main() -> Result<(), Error> {
         
         if touch_enabled {
             for t in touch_arc.lock().unwrap().iter() {
-                if t.button.is_some() {
-                    let m = match t.button.unwrap() {
-                        1 => MOUSE_LEFT,
-                        0 => MOUSE_UNKNOWN,
-                        i32::MIN..=-1_i32 | 
-                        2_i32..=i32::MAX => MOUSE_UNKNOWN
-                    };
-                    last_button = m;
-                }
+                last_button = mouse_btn_to_vnc(t.button)
+                    .unwrap_or(last_button);
                 vnc.send_pointer_event(last_button.clone(),
                     t.position[0].try_into().unwrap(),
                     t.position[1].try_into().unwrap()
@@ -547,4 +537,20 @@ fn record_touch_events(size: PixelSpaceCoord, touch_arc: Arc<Mutex<VecDeque<Touc
             };
         }
     });
+}
+
+pub const MOUSE_LEFT: u8 = 0x01;
+pub const MOUSE_UNKNOWN: u8 = 0x00;
+
+fn mouse_btn_to_vnc(button: Option<i32>) -> Option<u8> {
+    if button.is_some() {
+        let btn = match button.unwrap() {
+            1 => MOUSE_LEFT,
+            0 => MOUSE_UNKNOWN,
+            i32::MIN..=-1_i32 | 
+            2_i32..=i32::MAX => MOUSE_UNKNOWN
+        };
+        return Some(btn);
+    }
+    return None;
 }
