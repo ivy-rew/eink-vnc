@@ -268,14 +268,20 @@ fn main() -> Result<(), Error> {
     };
 
     let mut last_button: u8 = MOUSE_UNKNOWN;
+    let mut last_button_pen: u8 = MOUSE_UNKNOWN;
+    let mut last_full_touch: Option<Touch> = None;
 
     'running: loop {
         let time_at_sol = Instant::now();
     
         for t in rx.try_iter() {
-            last_button = mouse_btn_to_vnc(t.button)
-                .unwrap_or(last_button);
-            vnc.send_pointer_event(last_button.clone(),
+            last_button = mouse_btn_to_vnc(t.button).unwrap_or(last_button);
+            let send_button: u8 = if t.distance.is_some() && t.distance.unwrap().is_positive() {
+                MOUSE_UNKNOWN // not-touching; keep mouse up (pre-serving any passed last_button state)
+            } else {
+                last_button
+            };
+            vnc.send_pointer_event(send_button,
                 t.position[0].try_into().unwrap(),
                 t.position[1].try_into().unwrap()
             ).unwrap();
