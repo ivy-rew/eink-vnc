@@ -128,14 +128,14 @@ impl TouchEventListener {
             }
 
             // Check if we have all the data
-            if x.is_some() && y.is_some() && pressure.is_some() && syn.is_some() {
+            if syn.is_some() {
                 // Return the touch event
                 return Some(Touch {
                     position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
-                    button: button,
-                    distance: distance
+                    button,
+                    distance
                 });
             }
         }

@@ -1,7 +1,8 @@
 # eInk VNC
 
 A lightweight CLI (command line interface) tool to view a remote screen over VNC, designed to work on eInk screens.
-For now, you can only view, so you'll have to connect a keyboard to the serving computer, or find some other way to interact with it.
+For now, you can only view and use the mouse via touch-screen, so you'll have to connect a keyboard to the serving computer, 
+or find some other way to interact with it.
 
 This tool has been confirmed to work on several Kobo devices, such as the Kobo Libra 2 and Elipsa2E.
 It was optimized for text based workflows (document reading and writing), doing that it achieves a framerate of 30 fps.
@@ -27,18 +28,29 @@ You can use this tool by connecting to the eInk device through SSH, or using men
 To connect to a VNC server:
 
 ``` shell
-./einkvnc [IP_ADDRESS] [PORT] [OPTIONS]
+./einkvnc [IP_ADDRESS] [OPTIONS]
 ```
 
 For example:
 
 ``` shell
-./einkvnc 192.168.2.1 5902 --password abcdefg123 --contrast 2 
+./einkvnc 192.168.2.1 --port 5902 --password abcdefg123 --contrast 2 
 ```
 
 For faster framerates, use USB networking (see https://www.mobileread.com/forums/showthread.php?t=254214).
 
+## Environment
+
+Environment variables allow configuration beyond the CLI args.
+
+- `RUST_LOG` = [`debug`, `info`, .. ]; the log-level e.g. `export RUST_LOG=info`
+- `KOBO_TOUCH_ENABLED` = 0/1; disables touch input unless set to `1` (default)
+- `KOBO_TS_INPUT`; the path to your touch device input e.g. `/dev/input/event1` (default)
+
 ## Derivatives
 
-The code responsible for rendering to the eInk display is written by baskerville and taken from https://github.com/baskerville/plato.
-The code responsible for communicating using the VNC protocol is written by whitequark and taken from https://github.com/whitequark/rust-vnc.
+This projects thrives due to great achievements of others... 
+
+- Rendering for the eInk display was written by baskerville and taken from https://github.com/baskerville/plato.
+- VNC protocol was written by whitequark and taken from https://github.com/whitequark/rust-vnc.
+- Touch device listener was written by ewpratten and taken from https://github.com/ewpratten/kobo-rs
