@@ -50,7 +50,8 @@ fn arguments() -> ArgMatches {
         .arg(
             Arg::with_name("PORT")
                 .help("server port (default: 5900)")
-                .default_missing_value("5900")
+                .long("port")
+                .takes_value(true)
         )
         .arg(
             Arg::with_name("USERNAME")
