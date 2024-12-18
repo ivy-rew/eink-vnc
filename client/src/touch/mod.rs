@@ -5,7 +5,9 @@ use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
 use nalgebra::distance;
 
 mod coords;
+mod mouse;
 pub use self::coords::PixelSpaceCoord;
+pub use self::mouse::{MOUSE_LEFT, MOUSE_UNKNOWN, mouse_btn_to_vnc};
 
 /// Describes a touch event.
 #[derive(Debug, Clone)]
