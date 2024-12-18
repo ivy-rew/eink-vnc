@@ -553,3 +553,15 @@ fn mouse_btn_to_vnc(button: Option<i32>) -> Option<u8> {
     }
     return None;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mouse_adapt() {
+        assert_eq!(mouse_btn_to_vnc(Some(1)).unwrap(), MOUSE_LEFT, "left mouse down");
+        assert_eq!(mouse_btn_to_vnc(Some(0)).unwrap(), MOUSE_UNKNOWN, "all mouse keys up");
+        assert_eq!(mouse_btn_to_vnc(Some(123)).unwrap(), MOUSE_UNKNOWN, "compliant with unknown");
+    }
+}
