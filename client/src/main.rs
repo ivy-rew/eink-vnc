@@ -19,7 +19,7 @@ use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_LEFT, MOUSE_UNKNOWN};
-use clap::{value_t, App, Arg};
+use clap::{value_t, App, Arg, ArgMatches};
 use log::{debug, error, info};
 use std::str::FromStr;
 use std::thread;
@@ -38,10 +38,8 @@ pub struct PostProcBin {
     data: [u8; 256],
 }
 
-fn main() -> Result<(), Error> {
-    env_logger::init();
-
-    let matches = App::new("einkvnc")
+fn arguments() -> ArgMatches {
+    return App::new("einkvnc")
         .about("VNC client")
         .arg(
             Arg::with_name("HOST")
@@ -52,7 +50,7 @@ fn main() -> Result<(), Error> {
         .arg(
             Arg::with_name("PORT")
                 .help("server port (default: 5900)")
-                .index(2),
+                .default_missing_value("5900")
         )
         .arg(
             Arg::with_name("USERNAME")
@@ -95,7 +93,11 @@ fn main() -> Result<(), Error> {
                 .takes_value(true),
         ) 
         .get_matches();
+}
 
+fn main() -> Result<(), Error> {
+    env_logger::init();
+    let matches = arguments();
     let host = matches.value_of("HOST").unwrap();
     let port = value_t!(matches.value_of("PORT"), u16).unwrap_or(5900);
     let username = matches.value_of("USERNAME");
