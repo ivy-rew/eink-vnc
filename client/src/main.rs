@@ -18,7 +18,7 @@ pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
-use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_LEFT, MOUSE_UNKNOWN};
+use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use clap::{value_t, App, Arg, ArgMatches};
 use log::{debug, error, info};
 use std::str::FromStr;
