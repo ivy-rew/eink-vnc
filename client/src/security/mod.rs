@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 pub mod des;
 pub use self::des::encrypt as des;
 

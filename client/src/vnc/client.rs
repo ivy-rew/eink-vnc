@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use crate::security::des;
 // use crate::vnc::protocol::Message;
 use crate::vnc::{protocol, zrle, Colour, Error, Rect, Result};
