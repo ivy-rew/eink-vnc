@@ -18,11 +18,11 @@ pub struct Touch {
     pub pressure: i32,
     /// The timestamp of the touch event
     pub timestamp: DateTime<Utc>,
-
+    pub distance: Option<i32>,
     pub button: Option<i32>,
     pub stylus_back: Option<i32>,
     pub stylus_side: Option<i32>,
-    pub distance: Option<i32>,
+    pub stylus_tilt: Option<PixelSpaceCoord>,
 }
 
 /// Blocking event listener for touch events
@@ -81,6 +81,8 @@ impl TouchEventListener {
         let mut stylus_side: Option<i32> = None;
         let mut syn: Option<i32> = None;
         let mut distance: Option<i32> = None;
+        let mut tilt_x = None;
+        let mut tilt_y = None;
 
         // Loop through the incoming event stream
         loop {
@@ -121,6 +123,12 @@ impl TouchEventListener {
                         evdev_rs::enums::EV_ABS::ABS_MT_DISTANCE => {
                             distance = Some(event.value);
                         }
+                        evdev_rs::enums::EV_ABS::ABS_TILT_X => {
+                            tilt_x = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_ABS::ABS_TILT_Y => {
+                            tilt_y = Some(event.value);
+                        }
                         _ => {}
                     },
                     evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
@@ -152,10 +160,11 @@ impl TouchEventListener {
                     position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
+                    distance,
                     button,
                     stylus_back,
                     stylus_side,
-                    distance
+                    stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(PixelSpaceCoord::new(tilt_x.unwrap(), tilt_y.unwrap())) } else { None }
                 });
             }
         }
