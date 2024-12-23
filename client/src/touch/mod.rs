@@ -1,4 +1,4 @@
-use std::{fs::File, str::FromStr};
+use std::{fs::File, str::FromStr, result};
 
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
@@ -28,17 +28,25 @@ pub struct TouchEventListener {
     device: Device,
 }
 
+fn open_device(path: String) -> std::io::Result<Device> {
+    // Open the touch device
+    let file = File::open(path)?;
+    Device::new_from_file(file)
+}
+
 impl TouchEventListener {
 
     /// Construct a new `TouchEventListener` by opening the event stream
     pub fn open() -> std::io::Result<Self> {
-        // Open the touch device
         let touch_path: String = std::env::var("KOBO_TS_INPUT")
             .or(String::from_str("/dev/input/event1"))
             .unwrap();
-        let file = File::open(touch_path)?;
-        let device = Device::new_from_file(file)?;
+        let device = open_device(touch_path)?;
+        return Ok(Self { device })
+    }
 
+    pub fn open_input(touch_path: String) -> std::io::Result<Self> {
+        let device = open_device(touch_path)?;
         Ok(Self { device })
     }
 

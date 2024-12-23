@@ -45,7 +45,6 @@ Environment variables allow configuration beyond the CLI args.
 
 - `RUST_LOG` = [`debug`, `info`, .. ]; the log-level e.g. `export RUST_LOG=info`
 - `KOBO_TOUCH_ENABLED` = 0/1; disables touch input unless set to `1` (default)
-- `KOBO_TS_INPUT`; the path to your touch device input e.g. `/dev/input/event1` (default)
 
 ## Derivatives
 

@@ -41,7 +41,7 @@ pub struct PostProcBin {
 }
 
 fn arguments() -> ArgMatches {
-    return App::new("einkvnc")
+    App::new("einkvnc")
         .about("VNC client")
         .arg(
             Arg::with_name("HOST")
@@ -51,8 +51,9 @@ fn arguments() -> ArgMatches {
         )
         .arg(
             Arg::with_name("PORT")
-                .help("server port (default: 5900)")
+                .help("server port")
                 .long("port")
+                .default_value("5900")
                 .takes_value(true)
         )
         .arg(
@@ -94,8 +95,14 @@ fn arguments() -> ArgMatches {
                 .help("rotation (1-4), tested on a Clara HD, try at own risk")
                 .long("rotate")
                 .takes_value(true),
+        ).arg(
+            Arg::with_name("TOUCH_INPUT")
+                .help("the device that provides touch inputs.")
+                .default_value("/dev/input/event1")
+                .long("touch")
+                .takes_value(true),
         ) 
-        .get_matches();
+        .get_matches()
 }
 
 fn main() -> Result<(), Error> {
@@ -267,7 +274,7 @@ fn main() -> Result<(), Error> {
             .unwrap()
             .eq("1");
     let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events()
+        record_touch_events(matches.value_of("TOUCH_INPUT").unwrap().to_string())
     } else {
         mpsc::channel().1 // no-op; never sending anything
     };
@@ -526,10 +533,10 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     list.push(rect);
 }
 
-fn record_touch_events() -> Receiver<Touch> {
+fn record_touch_events(touch_input: String) -> Receiver<Touch> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
-        let screen = TouchEventListener::open().unwrap();
+        let screen = TouchEventListener::open_input(touch_input).unwrap();
         loop {
             match screen.next_touch(None) {
                 Some(touch) => {
