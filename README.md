@@ -44,7 +44,6 @@ For faster framerates, use USB networking (see https://www.mobileread.com/forums
 Environment variables allow configuration beyond the CLI args.
 
 - `RUST_LOG` = [`debug`, `info`, .. ]; the log-level e.g. `export RUST_LOG=info`
-- `KOBO_TOUCH_ENABLED` = 0/1; disables touch input unless set to `1` (default)
 
 ## Derivatives
 

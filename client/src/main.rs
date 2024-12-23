@@ -96,6 +96,12 @@ fn arguments() -> ArgMatches {
                 .long("rotate")
                 .takes_value(true),
         ).arg(
+            Arg::with_name("VIEW_ONLY")
+                .help("use VNC only as viewer, never sending any inputs?")
+                .default_value("false")
+                .long("viewonly")
+                .takes_value(true),
+        ).arg(
             Arg::with_name("TOUCH_INPUT")
                 .help("the device that provides touch inputs.")
                 .default_value("/dev/input/event1")
@@ -269,10 +275,8 @@ fn main() -> Result<(), Error> {
 
     let post_proc_enabled = contrast_exp != 1.0;
     
-    let touch_enabled: bool = std::env::var("KOBO_TOUCH_ENABLED")
-            .or(String::from_str("1"))
-            .unwrap()
-            .eq("1");
+    let touch_enabled: bool = !matches.value_of("VIEW_ONLY")
+        .unwrap_or("").trim().parse()?;
     let rx: Receiver<Touch> = if touch_enabled {
         record_touch_events(matches.value_of("TOUCH_INPUT").unwrap().to_string())
     } else {
