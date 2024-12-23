@@ -1,6 +1,9 @@
 name: Build
 on: [push, pull_request, workflow_dispatch]
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   ci:
     name: einkvnc
