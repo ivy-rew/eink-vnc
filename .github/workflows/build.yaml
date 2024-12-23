@@ -28,6 +28,13 @@ jobs:
         export CARGO_BUILD_TARGET=arm-unknown-linux-musleabihf
         cross test
         cross build --release
+    - name: Lint
+      uses: clechasseur/rs-clippy-check@v3
+      with:
+        working-directory: ./client
+        use-cross: true
+      env:
+        CARGO_BUILD_TARGET: arm-unknown-linux-musleabihf
     - name: Upload release archive
       uses: actions/upload-artifact@v4
       with:
