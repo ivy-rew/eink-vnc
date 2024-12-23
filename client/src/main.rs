@@ -187,16 +187,8 @@ fn main() -> Result<(), Error> {
     vnc.set_encodings(&[Encoding::CopyRect, Encoding::Zrle])
         .unwrap();
 
-    vnc.request_update(
-        Rect {
-            left: 0,
-            top: 0,
-            width,
-            height,
-        },
-        false,
-    )
-    .unwrap();
+    vnc.request_update(full_rect(vnc.size()), false)
+        .unwrap();
 
     #[cfg(feature = "eink_device")]
     debug!(
@@ -301,6 +293,10 @@ fn main() -> Result<(), Error> {
                 t.position[0].try_into().unwrap(),
                 t.position[1].try_into().unwrap()
             ).unwrap();
+            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
+                info!("full update due to stylus back-button-touch");
+                vnc.request_update(full_rect(vnc.size()), false).unwrap();
+            }
         }
 
         for event in vnc.poll_iter() {
@@ -544,7 +540,7 @@ fn record_touch_events(touch_input: String) -> Receiver<Touch> {
         loop {
             match screen.next_touch(None) {
                 Some(touch) => {
-                    info!("touched on screen {}", touch.position);
+                    debug!("touched on screen {}", touch.position);
                     tx.send(touch).unwrap();
                 },
                 None => {}
@@ -552,4 +548,13 @@ fn record_touch_events(touch_input: String) -> Receiver<Touch> {
         }
     });
     return rx;
+}
+
+fn full_rect(size: (u16,u16)) -> Rect {
+    Rect {
+        left: 0,
+        top: 0,
+        width: size.0,
+        height: size.1,
+    }
 }
