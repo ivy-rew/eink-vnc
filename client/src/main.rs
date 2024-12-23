@@ -41,7 +41,7 @@ pub struct PostProcBin {
 }
 
 fn arguments() -> ArgMatches {
-    return App::new("einkvnc")
+    App::new("einkvnc")
         .about("VNC client")
         .arg(
             Arg::with_name("HOST")
@@ -51,8 +51,9 @@ fn arguments() -> ArgMatches {
         )
         .arg(
             Arg::with_name("PORT")
-                .help("server port (default: 5900)")
+                .help("server port")
                 .long("port")
+                .default_value("5900")
                 .takes_value(true)
         )
         .arg(
@@ -94,8 +95,20 @@ fn arguments() -> ArgMatches {
                 .help("rotation (1-4), tested on a Clara HD, try at own risk")
                 .long("rotate")
                 .takes_value(true),
+        ).arg(
+            Arg::with_name("VIEW_ONLY")
+                .help("use VNC only as viewer, never sending any inputs?")
+                .default_value("false")
+                .long("viewonly")
+                .takes_value(true),
+        ).arg(
+            Arg::with_name("TOUCH_INPUT")
+                .help("the device that provides touch inputs.")
+                .default_value("/dev/input/event1")
+                .long("touch")
+                .takes_value(true),
         ) 
-        .get_matches();
+        .get_matches()
 }
 
 fn main() -> Result<(), Error> {
@@ -174,16 +187,8 @@ fn main() -> Result<(), Error> {
     vnc.set_encodings(&[Encoding::CopyRect, Encoding::Zrle])
         .unwrap();
 
-    vnc.request_update(
-        Rect {
-            left: 0,
-            top: 0,
-            width,
-            height,
-        },
-        false,
-    )
-    .unwrap();
+    vnc.request_update(full_rect(vnc.size()), false)
+        .unwrap();
 
     #[cfg(feature = "eink_device")]
     debug!(
@@ -262,12 +267,10 @@ fn main() -> Result<(), Error> {
 
     let post_proc_enabled = contrast_exp != 1.0;
     
-    let touch_enabled: bool = std::env::var("KOBO_TOUCH_ENABLED")
-            .or(String::from_str("1"))
-            .unwrap()
-            .eq("1");
+    let touch_enabled: bool = !matches.value_of("VIEW_ONLY")
+        .unwrap_or("").trim().parse()?;
     let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events()
+        record_touch_events(matches.value_of("TOUCH_INPUT").unwrap().to_string())
     } else {
         mpsc::channel().1 // no-op; never sending anything
     };
@@ -290,6 +293,10 @@ fn main() -> Result<(), Error> {
                 t.position[0].try_into().unwrap(),
                 t.position[1].try_into().unwrap()
             ).unwrap();
+            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
+                info!("full update due to stylus back-button-touch");
+                vnc.request_update(full_rect(vnc.size()), false).unwrap();
+            }
         }
 
         for event in vnc.poll_iter() {
@@ -526,14 +533,14 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     list.push(rect);
 }
 
-fn record_touch_events() -> Receiver<Touch> {
+fn record_touch_events(touch_input: String) -> Receiver<Touch> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
-        let screen = TouchEventListener::open().unwrap();
+        let screen = TouchEventListener::open_input(touch_input).unwrap();
         loop {
             match screen.next_touch(None) {
                 Some(touch) => {
-                    info!("touched on screen {}", touch.position);
+                    debug!("touched on screen {}", touch.position);
                     tx.send(touch).unwrap();
                 },
                 None => {}
@@ -541,4 +548,13 @@ fn record_touch_events() -> Receiver<Touch> {
         }
     });
     return rx;
+}
+
+fn full_rect(size: (u16,u16)) -> Rect {
+    Rect {
+        left: 0,
+        top: 0,
+        width: size.0,
+        height: size.1,
+    }
 }

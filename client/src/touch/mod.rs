@@ -1,4 +1,4 @@
-use std::{fs::File, str::FromStr};
+use std::{fs::File, str::FromStr, result};
 
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
@@ -18,9 +18,11 @@ pub struct Touch {
     pub pressure: i32,
     /// The timestamp of the touch event
     pub timestamp: DateTime<Utc>,
-
-    pub button: Option<i32>,
     pub distance: Option<i32>,
+    pub button: Option<i32>,
+    pub stylus_back: Option<i32>,
+    pub stylus_side: Option<i32>,
+    pub stylus_tilt: Option<PixelSpaceCoord>,
 }
 
 /// Blocking event listener for touch events
@@ -28,17 +30,25 @@ pub struct TouchEventListener {
     device: Device,
 }
 
+fn open_device(path: String) -> std::io::Result<Device> {
+    // Open the touch device
+    let file = File::open(path)?;
+    Device::new_from_file(file)
+}
+
 impl TouchEventListener {
 
     /// Construct a new `TouchEventListener` by opening the event stream
     pub fn open() -> std::io::Result<Self> {
-        // Open the touch device
         let touch_path: String = std::env::var("KOBO_TS_INPUT")
             .or(String::from_str("/dev/input/event1"))
             .unwrap();
-        let file = File::open(touch_path)?;
-        let device = Device::new_from_file(file)?;
+        let device = open_device(touch_path)?;
+        return Ok(Self { device })
+    }
 
+    pub fn open_input(touch_path: String) -> std::io::Result<Self> {
+        let device = open_device(touch_path)?;
         Ok(Self { device })
     }
 
@@ -67,8 +77,12 @@ impl TouchEventListener {
         let mut y = None;
         let mut pressure = None;
         let mut button: Option<i32> = None;
+        let mut stylus_back: Option<i32> = None;
+        let mut stylus_side: Option<i32> = None;
         let mut syn: Option<i32> = None;
         let mut distance: Option<i32> = None;
+        let mut tilt_x = None;
+        let mut tilt_y = None;
 
         // Loop through the incoming event stream
         loop {
@@ -109,11 +123,23 @@ impl TouchEventListener {
                         evdev_rs::enums::EV_ABS::ABS_MT_DISTANCE => {
                             distance = Some(event.value);
                         }
+                        evdev_rs::enums::EV_ABS::ABS_TILT_X => {
+                            tilt_x = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_ABS::ABS_TILT_Y => {
+                            tilt_y = Some(event.value);
+                        }
                         _ => {}
                     },
                     evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
                         evdev_rs::enums::EV_KEY::BTN_TOUCH => {
                             button = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_KEY::BTN_STYLUS => {
+                            stylus_back = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_KEY::BTN_STYLUS2 => {
+                            stylus_side = Some(event.value);
                         }
                         _ => {}
                     },
@@ -134,8 +160,11 @@ impl TouchEventListener {
                     position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
+                    distance,
                     button,
-                    distance
+                    stylus_back,
+                    stylus_side,
+                    stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(PixelSpaceCoord::new(tilt_x.unwrap(), tilt_y.unwrap())) } else { None }
                 });
             }
         }
