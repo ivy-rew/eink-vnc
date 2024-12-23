@@ -3,6 +3,7 @@
   "rust-analyzer.runnables.extraEnv": {
    "CARGO_BUILD_TARGET": "arm-unknown-linux-musleabihf"
   },
+  "rust-analyzer.checkOnSave": false, // way too slow; I'll better run it on demand
   "rust-analyzer.runnables.extraArgs": [
     "--target",
     "arm-unknown-linux-musleabihf"
