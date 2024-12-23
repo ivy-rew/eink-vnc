@@ -20,6 +20,8 @@ pub struct Touch {
     pub timestamp: DateTime<Utc>,
 
     pub button: Option<i32>,
+    pub stylus_back: Option<i32>,
+    pub stylus_side: Option<i32>,
     pub distance: Option<i32>,
 }
 
@@ -75,6 +77,8 @@ impl TouchEventListener {
         let mut y = None;
         let mut pressure = None;
         let mut button: Option<i32> = None;
+        let mut stylus_back: Option<i32> = None;
+        let mut stylus_side: Option<i32> = None;
         let mut syn: Option<i32> = None;
         let mut distance: Option<i32> = None;
 
@@ -123,6 +127,12 @@ impl TouchEventListener {
                         evdev_rs::enums::EV_KEY::BTN_TOUCH => {
                             button = Some(event.value);
                         }
+                        evdev_rs::enums::EV_KEY::BTN_STYLUS => {
+                            stylus_back = Some(event.value);
+                        }
+                        evdev_rs::enums::EV_KEY::BTN_STYLUS2 => {
+                            stylus_side = Some(event.value);
+                        }
                         _ => {}
                     },
                     evdev_rs::enums::EventCode::EV_SYN(kind) => match kind {
@@ -143,6 +153,8 @@ impl TouchEventListener {
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
                     button,
+                    stylus_back,
+                    stylus_side,
                     distance
                 });
             }
