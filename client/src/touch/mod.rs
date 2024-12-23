@@ -69,104 +69,152 @@ impl TouchEventListener {
         &self,
         timeout: Option<Duration>,
     ) -> Option<Touch> {
-        // Keep track of the start time
-        let start = Utc::now();
+        wait_for_touch(timeout,  || self.next_raw_event())
+    }
 
-        // Holder for out data
-        let mut x = None;
-        let mut y = None;
-        let mut pressure = None;
-        let mut button: Option<i32> = None;
-        let mut stylus_back: Option<i32> = None;
-        let mut stylus_side: Option<i32> = None;
-        let mut syn: Option<i32> = None;
-        let mut distance: Option<i32> = None;
-        let mut tilt_x = None;
-        let mut tilt_y = None;
+}
 
-        // Loop through the incoming event stream
-        loop {
-            // Check the timeout
-            if let Some(timeout) = timeout {
-                let elapsed = Utc::now().signed_duration_since(start);
-                if elapsed > timeout {
-                    return None;
-                }
-            }
 
-            // Read the next event
-            let (status, event) = self.next_raw_event().unwrap();
+fn wait_for_touch(
+    timeout: Option<Duration>,
+    f: impl Fn() -> Result<(ReadStatus, InputEvent), std::io::Error>,
+) -> Option<Touch> {
+    // Keep track of the start time
+    let start = Utc::now();
 
-            // Check the status
-            if status == ReadStatus::Success {
-                // We are looking for ABS touch events
-                match event.event_code {
-                    evdev_rs::enums::EventCode::EV_ABS(kind) => match kind {
-                        evdev_rs::enums::EV_ABS::ABS_X => {
-                            x = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_Y => {
-                            y = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_X => {
-                            x = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_MT_POSITION_Y => {
-                            y = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_PRESSURE => {
-                            pressure = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_MT_PRESSURE => {
-                            pressure = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_MT_DISTANCE => {
-                            distance = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_TILT_X => {
-                            tilt_x = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_ABS::ABS_TILT_Y => {
-                            tilt_y = Some(event.value);
-                        }
-                        _ => {}
-                    },
-                    evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
-                        evdev_rs::enums::EV_KEY::BTN_TOUCH => {
-                            button = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_KEY::BTN_STYLUS => {
-                            stylus_back = Some(event.value);
-                        }
-                        evdev_rs::enums::EV_KEY::BTN_STYLUS2 => {
-                            stylus_side = Some(event.value);
-                        }
-                        _ => {}
-                    },
-                    evdev_rs::enums::EventCode::EV_SYN(kind) => match kind {
-                        evdev_rs::enums::EV_SYN::SYN_REPORT => {
-                            syn = Some(event.value); // mouse state complete 
-                        }
-                        _ => {}
-                    },
-                    _ => { /* Unused */ }
-                }
-            }
+    // Holder for out data
+    let mut x = None;
+    let mut y = None;
+    let mut pressure = None;
+    let mut button: Option<i32> = None;
+    let mut stylus_back: Option<i32> = None;
+    let mut stylus_side: Option<i32> = None;
+    let mut syn: Option<i32> = None;
+    let mut distance: Option<i32> = None;
+    let mut tilt_x = None;
+    let mut tilt_y = None;
 
-            // Check if we have all the data
-            if syn.is_some() {
-                // Return the touch event
-                return Some(Touch {
-                    position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
-                    pressure: pressure.unwrap(),
-                    timestamp: Utc::now(),
-                    distance,
-                    button,
-                    stylus_back,
-                    stylus_side,
-                    stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(PixelSpaceCoord::new(tilt_x.unwrap(), tilt_y.unwrap())) } else { None }
-                });
+    // Loop through the incoming event stream
+    loop {
+        // Check the timeout
+        if let Some(timeout) = timeout {
+            let elapsed = Utc::now().signed_duration_since(start);
+            if elapsed > timeout {
+                return None;
             }
         }
+
+        // Read the next event
+        let (status, event)= f().unwrap();
+        println!("got event {}", event.event_code);
+
+        // Check the status
+        if status == ReadStatus::Success {
+            // We are looking for ABS touch events
+            match event.event_code {
+                evdev_rs::enums::EventCode::EV_ABS(kind) => match kind {
+                    evdev_rs::enums::EV_ABS::ABS_X => {
+                        x = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_Y => {
+                        y = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_MT_POSITION_X => {
+                        x = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_MT_POSITION_Y => {
+                        y = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_PRESSURE => {
+                        pressure = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_MT_PRESSURE => {
+                        pressure = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_MT_DISTANCE => {
+                        distance = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_TILT_X => {
+                        tilt_x = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_ABS::ABS_TILT_Y => {
+                        tilt_y = Some(event.value);
+                    }
+                    _ => {}
+                },
+                evdev_rs::enums::EventCode::EV_KEY(kind) => match kind {
+                    evdev_rs::enums::EV_KEY::BTN_TOUCH => {
+                        button = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_KEY::BTN_STYLUS => {
+                        stylus_back = Some(event.value);
+                    }
+                    evdev_rs::enums::EV_KEY::BTN_STYLUS2 => {
+                        stylus_side = Some(event.value);
+                    }
+                    _ => {}
+                },
+                evdev_rs::enums::EventCode::EV_SYN(kind) => match kind {
+                    evdev_rs::enums::EV_SYN::SYN_REPORT => {
+                        syn = Some(event.value); // mouse state complete 
+                    }
+                    _ => {}
+                },
+                _ => { /* Unused */ }
+            }
+        }
+
+        // Check if we have all the data
+        if syn.is_some() {
+            // Return the touch event
+            return Some(Touch {
+                position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
+                pressure: pressure.unwrap(),
+                timestamp: Utc::now(),
+                distance,
+                button,
+                stylus_back,
+                stylus_side,
+                stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(PixelSpaceCoord::new(tilt_x.unwrap(), tilt_y.unwrap())) } else { None }
+            });
+        }
+    }
+}
+
+mod tests {
+    use std::time::Duration;
+
+    use evdev_rs::enums::EventType;
+
+    use crate::input::DeviceEvent;
+
+    use super::*;
+
+    #[test]
+    fn test_touch() {
+
+        use std::fs::File;
+        use std::io::prelude::*;
+        use evdev_rs::*;
+        use evdev_rs::enums::*;
+
+        //let listener = TouchEventListener::open().unwrap();
+        use std::thread;
+
+        // thread::spawn(move || {
+        //     next_touch2(None, || {
+        //         println!("simulate");
+        //         if sent {
+        //             return Err(std::io::Error::last_os_error());
+        //         }
+        //         sent = true;
+        //         let time = TimeVal::new(1, 1);
+        //         let code = EventCode::EV_SYN(EV_SYN::SYN_MT_REPORT);
+        //         let evt = InputEvent::new(&time, &code, 0);
+        //         return Ok((ReadStatus::Success, evt));
+        //     });
+        // });
+        thread::sleep(Duration::from_secs(1));
+        assert_eq!(true, true);
     }
 }
