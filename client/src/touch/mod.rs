@@ -2,18 +2,15 @@ use std::{fs::File, str::FromStr, result};
 
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::{Device, InputEvent, ReadFlag, ReadStatus};
-use nalgebra::distance;
 
-mod coords;
 mod mouse;
-pub use self::coords::PixelSpaceCoord;
 pub use self::mouse::{MOUSE_LEFT, MOUSE_UNKNOWN, mouse_btn_to_vnc};
 
 /// Describes a touch event.
 #[derive(Debug, Clone)]
 pub struct Touch {
     /// The touch position
-    pub position: PixelSpaceCoord,
+    pub position: Coord,
     /// The touch pressure
     pub pressure: i32,
     /// The timestamp of the touch event
@@ -22,18 +19,18 @@ pub struct Touch {
     pub button: Option<i32>,
     pub stylus_back: Option<i32>,
     pub stylus_side: Option<i32>,
-    pub stylus_tilt: Option<PixelSpaceCoord>,
+    pub stylus_tilt: Option<Coord>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Coord {
+    pub x: i32,
+    pub y: i32,
 }
 
 /// Blocking event listener for touch events
 pub struct TouchEventListener {
     device: Device,
-}
-
-fn open_device(path: String) -> std::io::Result<Device> {
-    // Open the touch device
-    let file = File::open(path)?;
-    Device::new_from_file(file)
 }
 
 impl TouchEventListener {
@@ -43,13 +40,19 @@ impl TouchEventListener {
         let touch_path: String = std::env::var("KOBO_TS_INPUT")
             .or(String::from_str("/dev/input/event1"))
             .unwrap();
-        let device = open_device(touch_path)?;
+        let device = Self::open_device(touch_path)?;
         return Ok(Self { device })
     }
 
     pub fn open_input(touch_path: String) -> std::io::Result<Self> {
-        let device = open_device(touch_path)?;
+        let device = Self::open_device(touch_path)?;
         Ok(Self { device })
+    }
+
+    fn open_device(path: String) -> std::io::Result<Device> {
+        // Open the touch device
+        let file = File::open(path)?;
+        Device::new_from_file(file)
     }
 
     /// Read the next event from the stream
@@ -157,14 +160,14 @@ impl TouchEventListener {
             if syn.is_some() {
                 // Return the touch event
                 return Some(Touch {
-                    position: PixelSpaceCoord::new(x.unwrap(), y.unwrap()),
+                    position: Coord{x: x.unwrap(), y: y.unwrap()},
                     pressure: pressure.unwrap(),
                     timestamp: Utc::now(),
                     distance,
                     button,
                     stylus_back,
                     stylus_side,
-                    stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(PixelSpaceCoord::new(tilt_x.unwrap(), tilt_y.unwrap())) } else { None }
+                    stylus_tilt: if tilt_x.is_some() && tilt_y.is_some() { Some(Coord{x: tilt_x.unwrap(), y: tilt_y.unwrap()}) } else { None }
                 });
             }
         }

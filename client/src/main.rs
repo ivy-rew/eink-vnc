@@ -16,6 +16,8 @@ mod settings;
 mod vnc;
 mod touch;
 mod config;
+mod auth;
+mod processing;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
@@ -23,7 +25,9 @@ use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
+use crate::processing::PostProcBin;
 
+use config::Connection;
 use log::{debug, error, info};
 use clap::ArgMatches;
 use std::str::FromStr;
@@ -37,13 +41,6 @@ use anyhow::{Context as ResultExt, Error};
 use crate::device::CURRENT_DEVICE;
 
 const FB_DEVICE: &str = "/dev/fb0";
-
-#[repr(align(256))]
-pub struct PostProcBin {
-    data: [u8; 256],
-}
-
-
 
 fn main() -> Result<(), Error> {
     env_logger::init();
@@ -60,39 +57,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let mut vnc = match Client::from_tcp_stream(stream, !config.exclusive, |methods| {
-        debug!("available authentication methods: {:?}", methods);
-        for method in methods {
-            match method {
-                client::AuthMethod::None => return Some(client::AuthChoice::None),
-                client::AuthMethod::Password => {
-                    return match con.password {
-                        None => !panic!("VNC Auth not possible, due to missing 'password' arg"),
-                        Some(ref password) => {
-                            let mut key = [0; 8];
-                            for (i, byte) in password.bytes().enumerate() {
-                                if i == 8 {
-                                    break;
-                                }
-                                key[i] = byte
-                            }
-                            Some(client::AuthChoice::Password(key))
-                        }
-                    }
-                }
-                client::AuthMethod::AppleRemoteDesktop => match (con.username, con.password) {
-                    (Some(username), Some(password)) => {
-                        return Some(client::AuthChoice::AppleRemoteDesktop(
-                            username.to_owned(),
-                            password.to_owned(),
-                        ))
-                    }
-                    _ => (),
-                },
-            }
-        }
-        None
-    }) {
+    let mut vnc = match Client::from_tcp_stream(stream, !config.exclusive, |methods| auth::authenticate(&con, methods)) {
         Ok(vnc) => vnc,
         Err(error) => {
             error!("cannot initialize VNC session: {}", error);
@@ -145,53 +110,21 @@ fn main() -> Result<(), Error> {
         fb.set_rotation(config.rotate).ok();
     }
 
-    let post_proc_bin = PostProcBin {
-        data: (0..=255)
-            .map(|i| {
-                if config.contrast_exp == 1.0 {
-                    i
-                } else {
-                    let gray = config.contrast_gray_point;
-
-                    let rem_gray = 255.0 - gray;
-                    let inv_exponent = 1.0 / config.contrast_exp;
-
-                    let raw_color = i as f32;
-                    if raw_color < gray {
-                        (gray * (raw_color / gray).powf(config.contrast_exp)) as u8
-                    } else if raw_color > gray {
-                        (gray + rem_gray * ((raw_color - gray) / rem_gray).powf(inv_exponent)) as u8
-                    } else {
-                        gray as u8
-                    }
-                }
-            })
-            .map(|i| -> u8 {
-                if i > config.white_cutoff {
-                    255
-                } else {
-                    i
-                }
-            })
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap(),
-    };
-
+    
     const FRAME_MS: u64 = 1000 / 30;
-
+    
     const MAX_DIRTY_REFRESHES: usize = 500;
-
+    
     let mut dirty_rects: Vec<Rectangle> = Vec::new();
     let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
     let mut has_drawn_once = false;
     let mut dirty_update_count = 0;
-
+    
     let mut time_at_last_draw = Instant::now();
-
+    
     let fb_rect = rect![0, 0, width as i32, height as i32];
-
-    let post_proc_enabled = config.contrast_exp != 1.0;
+    
+    let post_proc_bin = PostProcBin::new(&config.processing);
     
     let touch_enabled: bool = !config.view_only;
     let rx: Receiver<Touch> = if touch_enabled {
@@ -215,8 +148,8 @@ fn main() -> Result<(), Error> {
                 last_button
             };
             vnc.send_pointer_event(send_button,
-                t.position[0].try_into().unwrap(),
-                t.position[1].try_into().unwrap()
+                t.position.x.try_into().unwrap(),
+                t.position.y.try_into().unwrap()
             ).unwrap();
             if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
                 info!("full update due to stylus back-button-touch");
@@ -239,28 +172,13 @@ fn main() -> Result<(), Error> {
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("network Δt: {}", elapsed_ms);
 
-                    let scale_down = 
+                    let post_process = 
                         pixels
                             .iter()
                             .step_by(4)
                             .map(|&c| post_proc_bin.data[c as usize])
                             .collect();
-
-                    let post_proc_pixels = if post_proc_enabled {
-                        pixels
-                            .iter()
-                            .step_by(4)
-                            .map(|&c| post_proc_bin.data[c as usize])
-                            .collect()
-                    } else {
-                        Vec::new()
-                    };
-
-                    let pixels = if post_proc_enabled {
-                        &post_proc_pixels
-                    } else {
-                        &scale_down
-                    };
+                    let pixels = &post_process;
 
                     let w = vnc_rect.width as u32;
                     let h = vnc_rect.height as u32;
@@ -465,7 +383,7 @@ fn record_touch_events(touch_input: String) -> Receiver<Touch> {
         loop {
             match screen.next_touch(None) {
                 Some(touch) => {
-                    debug!("touched on screen {}", touch.position);
+                    debug!("touched on screen {:?}", touch.position);
                     tx.send(touch).unwrap();
                 },
                 None => {}
