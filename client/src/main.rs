@@ -148,8 +148,8 @@ fn main() -> Result<(), Error> {
                 last_button
             };
             vnc.send_pointer_event(send_button,
-                t.position[0].try_into().unwrap(),
-                t.position[1].try_into().unwrap()
+                t.position.x.try_into().unwrap(),
+                t.position.y.try_into().unwrap()
             ).unwrap();
             if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
                 info!("full update due to stylus back-button-touch");
@@ -383,7 +383,7 @@ fn record_touch_events(touch_input: String) -> Receiver<Touch> {
         loop {
             match screen.next_touch(None) {
                 Some(touch) => {
-                    debug!("touched on screen {}", touch.position);
+                    debug!("touched on screen {:?}", touch.position);
                     tx.send(touch).unwrap();
                 },
                 None => {}
