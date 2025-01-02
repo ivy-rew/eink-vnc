@@ -16,6 +16,7 @@ mod settings;
 mod vnc;
 mod touch;
 mod config;
+mod auth;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
@@ -24,6 +25,7 @@ use crate::vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
 
+use config::Connection;
 use log::{debug, error, info};
 use clap::ArgMatches;
 use std::str::FromStr;
@@ -43,8 +45,6 @@ pub struct PostProcBin {
     data: [u8; 256],
 }
 
-
-
 fn main() -> Result<(), Error> {
     env_logger::init();
     let args: ArgMatches = Config::arguments();
@@ -60,39 +60,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let mut vnc = match Client::from_tcp_stream(stream, !config.exclusive, |methods| {
-        debug!("available authentication methods: {:?}", methods);
-        for method in methods {
-            match method {
-                client::AuthMethod::None => return Some(client::AuthChoice::None),
-                client::AuthMethod::Password => {
-                    return match con.password {
-                        None => !panic!("VNC Auth not possible, due to missing 'password' arg"),
-                        Some(ref password) => {
-                            let mut key = [0; 8];
-                            for (i, byte) in password.bytes().enumerate() {
-                                if i == 8 {
-                                    break;
-                                }
-                                key[i] = byte
-                            }
-                            Some(client::AuthChoice::Password(key))
-                        }
-                    }
-                }
-                client::AuthMethod::AppleRemoteDesktop => match (con.username, con.password) {
-                    (Some(username), Some(password)) => {
-                        return Some(client::AuthChoice::AppleRemoteDesktop(
-                            username.to_owned(),
-                            password.to_owned(),
-                        ))
-                    }
-                    _ => (),
-                },
-            }
-        }
-        None
-    }) {
+    let mut vnc = match Client::from_tcp_stream(stream, !config.exclusive, |methods| auth::authenticate(&con, methods)) {
         Ok(vnc) => vnc,
         Err(error) => {
             error!("cannot initialize VNC session: {}", error);
