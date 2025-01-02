@@ -15,14 +15,17 @@ mod security;
 mod settings;
 mod vnc;
 mod touch;
+mod config;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
-use clap::{value_t, App, Arg, ArgMatches};
+use crate::config::Config;
+
 use log::{debug, error, info};
+use clap::ArgMatches;
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
@@ -40,106 +43,30 @@ pub struct PostProcBin {
     data: [u8; 256],
 }
 
-fn arguments() -> ArgMatches {
-    App::new("einkvnc")
-        .about("VNC client")
-        .arg(
-            Arg::with_name("HOST")
-                .help("server hostname or IP")
-                .required(true)
-                .index(1),
-        )
-        .arg(
-            Arg::with_name("PORT")
-                .help("server port")
-                .long("port")
-                .default_value("5900")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("USERNAME")
-                .help("server username")
-                .long("username")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("PASSWORD")
-                .help("server password")
-                .long("password")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("EXCLUSIVE")
-                .help("request a non-shared session")
-                .long("exclusive"),
-        )
-        .arg(
-            Arg::with_name("CONTRAST")
-                .help("apply a post processing contrast filter")
-                .long("contrast")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("GRAYPOINT")
-                .help("the gray point of the post processing contrast filter")
-                .long("graypoint")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("WHITECUTOFF")
-                .help("apply a post processing filter to turn colors greater than the specified value to white (255)")
-                .long("whitecutoff")
-                .takes_value(true),
-        ).arg(
-            Arg::with_name("ROTATE")
-                .help("rotation (1-4), tested on a Clara HD, try at own risk")
-                .long("rotate")
-                .takes_value(true),
-        ).arg(
-            Arg::with_name("VIEW_ONLY")
-                .help("use VNC only as viewer, never sending any inputs?")
-                .default_value("false")
-                .long("viewonly")
-                .takes_value(true),
-        ).arg(
-            Arg::with_name("TOUCH_INPUT")
-                .help("the device that provides touch inputs.")
-                .default_value("/dev/input/event1")
-                .long("touch")
-                .takes_value(true),
-        ) 
-        .get_matches()
-}
+
 
 fn main() -> Result<(), Error> {
     env_logger::init();
-    let matches = arguments();
-    let host = matches.value_of("HOST").unwrap();
-    let port = value_t!(matches.value_of("PORT"), u16).unwrap_or(5900);
-    let username = matches.value_of("USERNAME");
-    let password = matches.value_of("PASSWORD");
-    let contrast_exp = value_t!(matches.value_of("CONTRAST"), f32).unwrap_or(1.0);
-    let contrast_gray_point = value_t!(matches.value_of("GRAYPOINT"), f32).unwrap_or(224.0);
-    let white_cutoff = value_t!(matches.value_of("WHITECUTOFF"), u8).unwrap_or(255);
-    let exclusive = matches.is_present("EXCLUSIVE");
-    let rotate = value_t!(matches.value_of("ROTATE"), i8).unwrap_or(1);
+    let args: ArgMatches = Config::arguments();
+    let config = Config::cli(&args);
 
-    info!("connecting to {}:{}", host, port);
-    let stream = match std::net::TcpStream::connect((host, port)) {
+    let con = config.connection;
+    info!("connecting to {}:{}", con.host, con.port);
+    let stream = match std::net::TcpStream::connect((con.host, con.port)) {
         Ok(stream) => stream,
         Err(error) => {
-            error!("cannot connect to {}:{}: {}", host, port, error);
+            error!("cannot connect to {}:{}: {}", con.host, con.port, error);
             std::process::exit(1)
         }
     };
 
-    let mut vnc = match Client::from_tcp_stream(stream, !exclusive, |methods| {
+    let mut vnc = match Client::from_tcp_stream(stream, !config.exclusive, |methods| {
         debug!("available authentication methods: {:?}", methods);
         for method in methods {
             match method {
                 client::AuthMethod::None => return Some(client::AuthChoice::None),
                 client::AuthMethod::Password => {
-                    return match password {
+                    return match con.password {
                         None => None,
                         Some(ref password) => {
                             let mut key = [0; 8];
@@ -153,7 +80,7 @@ fn main() -> Result<(), Error> {
                         }
                     }
                 }
-                client::AuthMethod::AppleRemoteDesktop => match (username, password) {
+                client::AuthMethod::AppleRemoteDesktop => match (con.username, con.password) {
                     (Some(username), Some(password)) => {
                         return Some(client::AuthChoice::AppleRemoteDesktop(
                             username.to_owned(),
@@ -215,24 +142,23 @@ fn main() -> Result<(), Error> {
 
     #[cfg(feature = "eink_device")]
     {
-        let startup_rotation = rotate;
-        fb.set_rotation(startup_rotation).ok();
+        fb.set_rotation(config.rotate).ok();
     }
 
     let post_proc_bin = PostProcBin {
         data: (0..=255)
             .map(|i| {
-                if contrast_exp == 1.0 {
+                if config.contrast_exp == 1.0 {
                     i
                 } else {
-                    let gray = contrast_gray_point;
+                    let gray = config.contrast_gray_point;
 
                     let rem_gray = 255.0 - gray;
-                    let inv_exponent = 1.0 / contrast_exp;
+                    let inv_exponent = 1.0 / config.contrast_exp;
 
                     let raw_color = i as f32;
                     if raw_color < gray {
-                        (gray * (raw_color / gray).powf(contrast_exp)) as u8
+                        (gray * (raw_color / gray).powf(config.contrast_exp)) as u8
                     } else if raw_color > gray {
                         (gray + rem_gray * ((raw_color - gray) / rem_gray).powf(inv_exponent)) as u8
                     } else {
@@ -241,7 +167,7 @@ fn main() -> Result<(), Error> {
                 }
             })
             .map(|i| -> u8 {
-                if i > white_cutoff {
+                if i > config.white_cutoff {
                     255
                 } else {
                     i
@@ -265,12 +191,11 @@ fn main() -> Result<(), Error> {
 
     let fb_rect = rect![0, 0, width as i32, height as i32];
 
-    let post_proc_enabled = contrast_exp != 1.0;
+    let post_proc_enabled = config.contrast_exp != 1.0;
     
-    let touch_enabled: bool = !matches.value_of("VIEW_ONLY")
-        .unwrap_or("").trim().parse()?;
+    let touch_enabled: bool = !config.view_only;
     let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events(matches.value_of("TOUCH_INPUT").unwrap().to_string())
+        record_touch_events(config.touch_input.to_string())
     } else {
         mpsc::channel().1 // no-op; never sending anything
     };
