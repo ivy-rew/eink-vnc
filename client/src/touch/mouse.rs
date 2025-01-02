@@ -5,9 +5,7 @@ pub fn mouse_btn_to_vnc(button: Option<i32>) -> Option<u8> {
     if button.is_some() {
         let btn = match button.unwrap() {
             1 => MOUSE_LEFT,
-            0 => MOUSE_UNKNOWN,
-            i32::MIN..=-1_i32 | 
-            2_i32..=i32::MAX => MOUSE_UNKNOWN
+            _ => MOUSE_UNKNOWN,
         };
         return Some(btn);
     }
