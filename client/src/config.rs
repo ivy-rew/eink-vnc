@@ -1,12 +1,9 @@
 use clap::{value_t, App, Arg, ArgMatches};
+use crate::processing::PostProcConfig;
 
 pub struct Config<'a> {
     pub connection: Connection<'a>,
-
-    // post-processing
-    pub contrast_exp: f32,
-    pub contrast_gray_point: f32,
-    pub white_cutoff: u8,
+    pub processing: PostProcConfig,
 
     pub exclusive: bool,
     pub rotate: i8,
@@ -24,11 +21,14 @@ impl Config<'static> {
             username: matches.value_of("USERNAME").clone(),
             password: matches.value_of("PASSWORD").clone(),
         };
-        return Config{
-            connection,
+        let processing = PostProcConfig {
             contrast_exp: value_t!(matches.value_of("CONTRAST"), f32).unwrap_or(1.0),
             contrast_gray_point: value_t!(matches.value_of("GRAYPOINT"), f32).unwrap_or(224.0),
             white_cutoff: value_t!(matches.value_of("WHITECUTOFF"), u8).unwrap_or(255),
+        };
+        return Config{
+            connection,
+            processing,
             exclusive: matches.is_present("EXCLUSIVE"),
             rotate: value_t!(matches.value_of("ROTATE"), i8).unwrap_or(1),
 
@@ -116,9 +116,11 @@ impl Config<'static> {
 
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Connection<'a> {
     pub host: &'a str,
     pub port: u16,
     pub username: Option<&'a str>,
     pub password: Option<&'a str>,
 }
+

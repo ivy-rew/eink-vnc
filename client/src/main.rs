@@ -17,6 +17,7 @@ mod vnc;
 mod touch;
 mod config;
 mod auth;
+mod processing;
 
 pub use crate::framebuffer::image::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
@@ -24,6 +25,7 @@ use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
+use crate::processing::PostProcBin;
 
 use config::Connection;
 use log::{debug, error, info};
@@ -40,10 +42,7 @@ use crate::device::CURRENT_DEVICE;
 
 const FB_DEVICE: &str = "/dev/fb0";
 
-#[repr(align(256))]
-pub struct PostProcBin {
-    data: [u8; 256],
-}
+
 
 fn main() -> Result<(), Error> {
     env_logger::init();
@@ -113,53 +112,23 @@ fn main() -> Result<(), Error> {
         fb.set_rotation(config.rotate).ok();
     }
 
-    let post_proc_bin = PostProcBin {
-        data: (0..=255)
-            .map(|i| {
-                if config.contrast_exp == 1.0 {
-                    i
-                } else {
-                    let gray = config.contrast_gray_point;
-
-                    let rem_gray = 255.0 - gray;
-                    let inv_exponent = 1.0 / config.contrast_exp;
-
-                    let raw_color = i as f32;
-                    if raw_color < gray {
-                        (gray * (raw_color / gray).powf(config.contrast_exp)) as u8
-                    } else if raw_color > gray {
-                        (gray + rem_gray * ((raw_color - gray) / rem_gray).powf(inv_exponent)) as u8
-                    } else {
-                        gray as u8
-                    }
-                }
-            })
-            .map(|i| -> u8 {
-                if i > config.white_cutoff {
-                    255
-                } else {
-                    i
-                }
-            })
-            .collect::<Vec<u8>>()
-            .try_into()
-            .unwrap(),
-    };
-
+    
     const FRAME_MS: u64 = 1000 / 30;
-
+    
     const MAX_DIRTY_REFRESHES: usize = 500;
-
+    
     let mut dirty_rects: Vec<Rectangle> = Vec::new();
     let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
     let mut has_drawn_once = false;
     let mut dirty_update_count = 0;
-
+    
     let mut time_at_last_draw = Instant::now();
-
+    
     let fb_rect = rect![0, 0, width as i32, height as i32];
-
-    let post_proc_enabled = config.contrast_exp != 1.0;
+    
+    let processing = config.processing;
+    let post_proc_bin = PostProcBin::new(&processing);
+    let post_proc_enabled = config.processing.contrast_exp != 1.0;
     
     let touch_enabled: bool = !config.view_only;
     let rx: Receiver<Touch> = if touch_enabled {
