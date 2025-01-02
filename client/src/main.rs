@@ -67,7 +67,7 @@ fn main() -> Result<(), Error> {
                 client::AuthMethod::None => return Some(client::AuthChoice::None),
                 client::AuthMethod::Password => {
                     return match con.password {
-                        None => None,
+                        None => !panic!("VNC Auth not possible, due to missing 'password' arg"),
                         Some(ref password) => {
                             let mut key = [0; 8];
                             for (i, byte) in password.bytes().enumerate() {
