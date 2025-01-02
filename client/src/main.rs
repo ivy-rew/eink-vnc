@@ -42,8 +42,6 @@ use crate::device::CURRENT_DEVICE;
 
 const FB_DEVICE: &str = "/dev/fb0";
 
-
-
 fn main() -> Result<(), Error> {
     env_logger::init();
     let args: ArgMatches = Config::arguments();
@@ -126,9 +124,7 @@ fn main() -> Result<(), Error> {
     
     let fb_rect = rect![0, 0, width as i32, height as i32];
     
-    let processing = config.processing;
-    let post_proc_bin = PostProcBin::new(&processing);
-    let post_proc_enabled = config.processing.contrast_exp != 1.0;
+    let post_proc_bin = PostProcBin::new(&config.processing);
     
     let touch_enabled: bool = !config.view_only;
     let rx: Receiver<Touch> = if touch_enabled {
@@ -176,28 +172,13 @@ fn main() -> Result<(), Error> {
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("network Δt: {}", elapsed_ms);
 
-                    let scale_down = 
+                    let post_process = 
                         pixels
                             .iter()
                             .step_by(4)
                             .map(|&c| post_proc_bin.data[c as usize])
                             .collect();
-
-                    let post_proc_pixels = if post_proc_enabled {
-                        pixels
-                            .iter()
-                            .step_by(4)
-                            .map(|&c| post_proc_bin.data[c as usize])
-                            .collect()
-                    } else {
-                        Vec::new()
-                    };
-
-                    let pixels = if post_proc_enabled {
-                        &post_proc_pixels
-                    } else {
-                        &scale_down
-                    };
+                    let pixels = &post_process;
 
                     let w = vnc_rect.width as u32;
                     let h = vnc_rect.height as u32;
