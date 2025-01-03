@@ -5,29 +5,12 @@ extern crate log;
 
 mod localbuffer;
 
-use std::mem;
-use std::thread;
-use std::fs::File;
-use std::sync::mpsc;
-use std::collections::VecDeque;
-use std::path::Path;
 use std::time::Duration;
 use anyhow::{Context as ResultExt, Error};
 use einkvnc::config::Config;
 use localbuffer::FBCanvas;
-use chrono::Local;
-use sdl2::event::Event as SdlEvent;
-use sdl2::keyboard::{Scancode, Keycode, Mod};
-use sdl2::mouse::MouseState;
-use einkvnc::framebuffer::{Framebuffer, UpdateMode};
-use einkvnc::input::{DeviceEvent, FingerStatus, ButtonCode, ButtonStatus};
-use einkvnc::geom::{Rectangle, Axis};
-//use plato_core::gesture::{GestureEvent, gesture_events};
+use einkvnc::framebuffer::Framebuffer;
 use einkvnc::device::CURRENT_DEVICE;
-// use plato_core::font::Fonts;
-// use plato_core::pt;
-// use plato_core::png;
-//use clap::ArgMatches;
 
 pub const APP_NAME: &str = "EinkVNC Emulator";
 
@@ -58,44 +41,6 @@ fn local_config() -> Config<'static> {
         rotate: 1,
         view_only: true,
         touch_input: "/dev/oblivion".to_string(),
-    }
-}
-
-#[inline]
-fn seconds(timestamp: u32) -> f64 {
-    timestamp as f64 / 1000.0
-}
-
-#[inline]
-pub fn device_event(event: SdlEvent) -> Option<DeviceEvent> {
-    match event {
-        // SdlEvent::MouseButtonDown { timestamp, x, y, .. } =>
-        //     Some(DeviceEvent::Finger { id: 0,
-        //                                status: FingerStatus::Down,
-        //                                position: pt!(x, y),
-        //                                time: seconds(timestamp) }),
-        // SdlEvent::MouseButtonUp { timestamp, x, y, .. } =>
-        //     Some(DeviceEvent::Finger { id: 0,
-        //                                status: FingerStatus::Up,
-        //                                position: pt!(x, y),
-        //                                time: seconds(timestamp) }),
-        // SdlEvent::MouseMotion { timestamp, x, y, .. } =>
-        //     Some(DeviceEvent::Finger { id: 0,
-        //                                status: FingerStatus::Motion,
-        //                                position: pt!(x, y),
-        //                                time: seconds(timestamp) }),
-        _ => None,
-    }
-}
-
-fn code_from_key(key: Scancode) -> Option<ButtonCode> {
-    match key {
-        Scancode::B => Some(ButtonCode::Backward),
-        Scancode::F => Some(ButtonCode::Light),
-        Scancode::H => Some(ButtonCode::Home),
-        Scancode::E => Some(ButtonCode::Erase),
-        Scancode::G => Some(ButtonCode::Highlight),
-        _ => None,
     }
 }
 
