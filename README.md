@@ -45,6 +45,19 @@ Environment variables allow configuration beyond the CLI args.
 
 - `RUST_LOG` = [`debug`, `info`, .. ]; the log-level e.g. `export RUST_LOG=info`
 
+## Emulator
+
+We have an emulator for development purposes, that will simulate a real eink display.
+So you do not necessary need an eink-device to run the current development state.
+
+```shell
+# start vnc: tigervnc-server is my favourite due to its speed
+elipsaRes=1872x1404
+vncserver -localhost no -name home -xstartup $HOME/.vnc/anonymous-vnc_xstartup -geometry 1872x1404
+# connect: assume vnc is running localhost:5901 and password '123456'
+./run_emulator.sh
+```
+
 ## Derivatives
 
 This projects thrives due to great achievements of others... 
