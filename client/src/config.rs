@@ -5,7 +5,6 @@ pub struct Config<'a> {
     pub connection: Connection<'a>,
     pub processing: PostProcConfig,
 
-    pub exclusive: bool,
     pub rotate: i8,
 
     pub view_only: bool,
@@ -20,6 +19,7 @@ impl Config<'static> {
             port: value_t!(matches.value_of("PORT"), u16).unwrap_or(5900),
             username: matches.value_of("USERNAME").clone(),
             password: matches.value_of("PASSWORD").clone(),
+            exclusive: matches.is_present("EXCLUSIVE"),
         };
         let processing = PostProcConfig {
             contrast_exp: value_t!(matches.value_of("CONTRAST"), f32).unwrap_or(1.0),
@@ -29,9 +29,8 @@ impl Config<'static> {
         return Config{
             connection,
             processing,
-            exclusive: matches.is_present("EXCLUSIVE"),
+            
             rotate: value_t!(matches.value_of("ROTATE"), i8).unwrap_or(1),
-
             view_only: matches.value_of("VIEW_ONLY")
             .unwrap_or("false").trim().parse().unwrap(),
             touch_input: matches.value_of("TOUCH_INPUT").unwrap_or("/dev/input/event1").to_string(),
@@ -122,5 +121,6 @@ pub struct Connection<'a> {
     pub port: u16,
     pub username: Option<&'a str>,
     pub password: Option<&'a str>,
+    pub exclusive: bool,
 }
 
