@@ -19,8 +19,6 @@ use chrono::Local;
 use sdl2::event::Event as SdlEvent;
 use sdl2::keyboard::{Scancode, Keycode, Mod};
 use sdl2::mouse::MouseState;
-use sdl2::rect::Point as SdlPoint;
-use sdl2::rect::Rect as SdlRect;
 use einkvnc::framebuffer::{Framebuffer, UpdateMode};
 use einkvnc::input::{DeviceEvent, FingerStatus, ButtonCode, ButtonStatus};
 use einkvnc::geom::{Rectangle, Axis};
@@ -44,6 +42,11 @@ fn main() -> Result<(), Error> {
     let (width, height) = CURRENT_DEVICE.dims;
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, height);
     println!("{} is running on a Kobo {}.", APP_NAME, CURRENT_DEVICE.model);
+
+    ctrlc::set_handler(move || {
+        println!("received Ctrl+C!");
+        std::process::exit(1);
+    }).expect("Error setting Ctrl-C handler");
 
     einkvnc::run(&mut vnc, &mut vnc_fb, &config)
 }
