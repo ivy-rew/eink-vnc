@@ -1,0 +1,2 @@
+menu_item :main    :VNC run        :cmd_spawn          :/mnt/onboard/.adds/vncdev/nickel_dialog.sh
+menu_item :main    :VNC kill       :cmd_spawn          :pkill einkvnc
