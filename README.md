@@ -55,7 +55,7 @@ So you do not necessary need an eink-device to run the current development state
 elipsaRes=1872x1404
 vncserver -localhost no -name home -xstartup $HOME/.vnc/anonymous-vnc_xstartup -geometry 1872x1404
 # connect: assume vnc is running localhost:5901 and password '123456'
-./run_emulator.sh
+./run_emulator.sh localhost --port 5901 --password 123456 --contrast 2
 ```
 
 ## Derivatives

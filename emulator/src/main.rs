@@ -6,6 +6,7 @@ extern crate log;
 mod localbuffer;
 
 use std::time::Duration;
+use std::cmp;
 use anyhow::{Context as ResultExt, Error};
 use einkvnc::config::Config;
 use localbuffer::FBCanvas;
@@ -23,7 +24,7 @@ fn main() -> Result<(), Error> {
     let mut vnc = einkvnc::connect(config.connection);
 
     let (width, height) = CURRENT_DEVICE.dims;
-    let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, height);
+    let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));
     println!("{} is running on a Kobo {}.", APP_NAME, CURRENT_DEVICE.model);
 
     ctrlc::set_handler(move || {

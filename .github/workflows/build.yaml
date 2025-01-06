@@ -22,7 +22,7 @@ jobs:
         target: arm-unknown-linux-musleabihf
     - name: Install Cross
       run: cargo install cross
-    - name: Build
+    - name: Build Client
       run: |
         cd client
         export CARGO_BUILD_TARGET=arm-unknown-linux-musleabihf
@@ -33,3 +33,8 @@ jobs:
       with:
         name: eInkVnc
         path: client/target/arm-unknown-linux-musleabihf/release/einkvnc
+    - name: Build Emulator
+      run: |
+        sudo apt install libsdl2-dev
+        cd emulator
+        cargo build
