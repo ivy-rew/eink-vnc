@@ -1,5 +1,5 @@
 use super::{Framebuffer, UpdateMode};
-use crate::color::{WHITE};
+use crate::color::{GRAY12, RED, WHITE};
 use crate::color::Color;
 use crate::geom::{lerp, Rectangle};
 use anyhow::{format_err, Context, Error};
@@ -230,6 +230,10 @@ impl<'a> ReadonlyPixmap<'a> {
         if self.samples == 1 {
             Color::Gray(self.data[addr])
         } else {
+            let max=self.data.len();
+            if (max < addr+4) {
+                return RED; // signal an invalid pixel request
+            }
             Color::from_rgb(&self.data[addr..addr+3])
         }
     }

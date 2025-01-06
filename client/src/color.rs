@@ -97,6 +97,8 @@ pub const GRAY13: Color = gray!(0xDD);
 pub const GRAY14: Color = gray!(0xEE);
 pub const GRAY15: Color = gray!(0xFF);
 
+pub const RED: Color = Color::Rgb(255, 0, 0);
+
 pub const BLACK: Color = GRAY00;
 pub const WHITE: Color = GRAY15;
 
