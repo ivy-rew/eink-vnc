@@ -5,9 +5,16 @@ deps(){
 	sudo apt install libevdev-dev
 }
 
-# simulate as Elipsa 2E
+# !simulate as Elipsa 2E
+# export MODEL_NUMBER=389
 export PRODUCT=condor
-export MODEL_NUMBER=389
+
+# !libra colour
+# export MODEL_NUMBER=390
+export PRODUCT=monza
+
+# !libra H20
+export PRODUCT=storm
 
 cd emulator
 cargo run "$@"

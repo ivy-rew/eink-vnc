@@ -175,7 +175,7 @@ pub trait Framebuffer {
         } else {
             gray as u8
         };
-        self.set_pixel(x, y, color);
+        self.set_pixel(x, y, Color::Gray(color)); // dare to colorize?
     }
 
     fn draw_framed_pixmap_contrast(

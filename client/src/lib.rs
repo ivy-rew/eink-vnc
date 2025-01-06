@@ -152,10 +152,12 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("network Δt: {}", elapsed_ms);
 
+                    let steps = if CURRENT_DEVICE.color_samples() == 1 { 4 } else { 1 };
+                    let colors = if CURRENT_DEVICE.color_samples() == 1 { 1 } else { 4 };
                     let post_process = 
                         pixels
                             .iter()
-                            .step_by(4)
+                            .step_by(steps)
                             .map(|&c| post_proc_bin.data[c as usize])
                             .collect();
                     let pixels = &post_process;
@@ -169,6 +171,7 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                         width: w as u32,
                         height: h as u32,
                         data: pixels,
+                        samples: colors,
                     };
                     debug!("Put pixels {} {} {} size {}",w,h,w*h,pixels.len());
 
@@ -228,12 +231,12 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                         let dst_top = dst.top as u32;
 
                         let mut intermediary_pixmap =
-                            Pixmap::new(dst.width as u32, dst.height as u32);
+                            Pixmap::new(dst.width as u32, dst.height as u32, CURRENT_DEVICE.color_samples());
 
                         for y in 0..intermediary_pixmap.height {
                             for x in 0..intermediary_pixmap.width {
-                                let color = fb.get_pixel(src_left + x, src_top + y);
-                                intermediary_pixmap.set_pixel(x, y, color);
+                                //let color = fb.get_pixel(src_left + x, src_top + y);
+                                //intermediary_pixmap.set_pixel(x, y, color);
                             }
                         }
 

@@ -5,6 +5,7 @@ use sdl2::pixels::{Color as SdlColor, PixelFormatEnum};
 use sdl2::render::{WindowCanvas, BlendMode};
 use einkvnc::framebuffer::{Framebuffer, UpdateMode};
 use einkvnc::geom::{Rectangle, Axis};
+use einkvnc::color::Color;
 use anyhow::{Context as ResultExt, Error};
 use chrono::Local;
 
@@ -117,10 +118,10 @@ impl Framebuffer for FBCanvas {
         Ok((width, height))
     }
 
-    fn get_pixel(&self, x: u32, y: u32) -> u8 {
-        debug!("virtualfb: get pixel {}/{}", x, y);
-        1
-    }
+    // fn get_pixel(&self, x: u32, y: u32) -> u8 {
+    //     debug!("virtualfb: get pixel {}/{}", x, y);
+    //     1
+    // }
 
     fn set_monochrome(&mut self, _enable: bool) {
         debug!("set mono {}", _enable)
