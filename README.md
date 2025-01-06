@@ -58,6 +58,9 @@ vncserver -localhost no -name home -xstartup $HOME/.vnc/anonymous-vnc_xstartup -
 ./run_emulator.sh localhost --port 5901 --password 123456 --contrast 2
 ```
 
+To simulate a color device https://github.com/ivy-rew/eink-vnc/pull/28, or one with another resolution, the `run_emulator.sh` must be edited. 
+Export the `product` environment variable, that matches your device.
+
 ## Derivatives
 
 This projects thrives due to great achievements of others... 
