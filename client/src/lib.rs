@@ -5,11 +5,11 @@ extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
+pub mod color;
 pub mod device;
 pub mod framebuffer;
 #[macro_use]
 pub mod geom;
-mod color;
 pub mod input;
 mod security;
 pub mod settings;
