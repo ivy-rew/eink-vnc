@@ -173,7 +173,7 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                         data: pixels,
                         samples: colors,
                     };
-                    debug!("Put pixels {} {} {} size {}",w,h,w*h,pixels.len());
+                    debug!("Put pixels w={} h={} w*h={} size={}",w,h,w*h,pixels.len());
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("postproc Δt: {}", elapsed_ms);
