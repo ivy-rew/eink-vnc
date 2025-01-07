@@ -1,0 +1,20 @@
+[workspace]
+members = [
+    "emulator"
+]
+resolver = "2"
+
+[workspace.dependencies]
+log = "0.4.22"
+env_logger = "0.11.6"
+anyhow = "1.0.95"
+chrono = "0.4.39"
+einkvnc = { path = "../client" }
+
+[profile.release-minsized]
+inherits = "release"
+panic = "abort"
+codegen-units = 1
+opt-level = "z"
+lto = true
+strip = true
