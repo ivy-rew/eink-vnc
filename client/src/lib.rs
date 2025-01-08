@@ -88,7 +88,7 @@ pub fn connect(con: Connection) -> Client {
 }
 
 
-fn put_pixels(vnc_rect: Rect, ref pixels: &Vec<u8>){
+fn put_pixels(vnc_rect: Rect, ref pixels: &Vec<u8>, mut fb: &mut Box<dyn Framebuffer>, fb_rect: Rectangle){
     debug!("Put pixels");
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
@@ -222,7 +222,7 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                 }
                 Event::PutPixels(vnc_rect, ref pixels) => {
                     debug!("Put pixels");
-                    put_pixels(vnc_rect, pixels);
+                    put_pixels(vnc_rect, pixels, &mut fb, fb_rect);
                 }
                 Event::CopyPixels { src, dst } => {
                     debug!("Copy pixels!");

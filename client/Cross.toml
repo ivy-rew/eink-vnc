@@ -1,8 +1,0 @@
-[target.arm-unknown-linux-musleabihf]
-image = "ewpratten/kobo-cross-armhf:latest"
-
-[build.env]
-passthrough = [
-    "RUST_BACKTRACE",
-    "RUST_LOG",
-]

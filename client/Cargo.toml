@@ -35,3 +35,12 @@ strip = true
 [features]
 default = ["eink_device"]
 eink_device = []
+
+[package.metadata.cross.target.arm-unknown-linux-musleabihf]
+image = "ewpratten/kobo-cross-armhf:latest"
+
+[package.metadata.cross.build.env]
+passthrough = [
+    "RUST_BACKTRACE",
+    "RUST_LOG",
+]
