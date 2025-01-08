@@ -88,66 +88,8 @@ pub fn connect(con: Connection) -> Client {
 }
 
 
-pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
-    let (width, height) = vnc.size();
-    let vnc_format = vnc.format();
-    const FRAME_MS: u64 = 1000 / 30;
-    
-    const MAX_DIRTY_REFRESHES: usize = 500;
-    
-    let mut dirty_rects: Vec<Rectangle> = Vec::new();
-    let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
-    let mut has_drawn_once = false;
-    let mut dirty_update_count = 0;
-    
-    let mut time_at_last_draw = Instant::now();
-    
-    let fb_rect = rect![0, 0, width as i32, height as i32];
-    
-    let post_proc_bin = PostProcBin::new(&config.processing);
-    
-    let touch_enabled: bool = !config.view_only;
-    let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events(config.touch_input.to_string())
-    } else {
-        mpsc::channel().1 // no-op; never sending anything
-    };
-
-    let mut last_button: u8 = MOUSE_UNKNOWN;
-    let mut last_button_pen: u8 = MOUSE_UNKNOWN;
-    let mut last_full_touch: Option<Touch> = None;
-
-    'running: loop {
-        let time_at_sol = Instant::now();
-    
-        for t in rx.try_iter() {
-            last_button = mouse_btn_to_vnc(t.button).unwrap_or(last_button);
-            let send_button: u8 = if t.distance.is_some() && t.distance.unwrap().is_positive() {
-                MOUSE_UNKNOWN // not-touching; keep mouse up (pre-serving any passed last_button state)
-            } else {
-                last_button
-            };
-            vnc.send_pointer_event(send_button,
-                t.position.x.try_into().unwrap(),
-                t.position.y.try_into().unwrap()
-            ).unwrap();
-            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
-                info!("full update due to stylus back-button-touch");
-                vnc.request_update(full_rect(vnc.size()), false).unwrap();
-            }
-        }
-
-        for event in vnc.poll_iter() {
-            use client::Event;
-
-            match event {
-                Event::Disconnected(None) => break 'running,
-                Event::Disconnected(Some(error)) => {
-                    error!("server disconnected: {:?}", error);
-                    break 'running;
-                }
-                Event::PutPixels(vnc_rect, ref pixels) => {
-                    debug!("Put pixels");
+fn put_pixels(vnc_rect: Rect, ref pixels: &Vec<u8>){
+    debug!("Put pixels");
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("network Δt: {}", elapsed_ms);
@@ -218,6 +160,69 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("rects Δt: {}", elapsed_ms);
+}
+
+pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
+    let (width, height) = vnc.size();
+    let vnc_format = vnc.format();
+    const FRAME_MS: u64 = 1000 / 30;
+    
+    const MAX_DIRTY_REFRESHES: usize = 500;
+    
+    let mut dirty_rects: Vec<Rectangle> = Vec::new();
+    let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
+    let mut has_drawn_once = false;
+    let mut dirty_update_count = 0;
+    
+    let mut time_at_last_draw = Instant::now();
+    
+    let fb_rect = rect![0, 0, width as i32, height as i32];
+    
+    let post_proc_bin = PostProcBin::new(&config.processing);
+    
+    let touch_enabled: bool = !config.view_only;
+    let rx: Receiver<Touch> = if touch_enabled {
+        record_touch_events(config.touch_input.to_string())
+    } else {
+        mpsc::channel().1 // no-op; never sending anything
+    };
+
+    let mut last_button: u8 = MOUSE_UNKNOWN;
+    let mut last_button_pen: u8 = MOUSE_UNKNOWN;
+    let mut last_full_touch: Option<Touch> = None;
+
+    'running: loop {
+        let time_at_sol = Instant::now();
+    
+        for t in rx.try_iter() {
+            last_button = mouse_btn_to_vnc(t.button).unwrap_or(last_button);
+            let send_button: u8 = if t.distance.is_some() && t.distance.unwrap().is_positive() {
+                MOUSE_UNKNOWN // not-touching; keep mouse up (pre-serving any passed last_button state)
+            } else {
+                last_button
+            };
+            vnc.send_pointer_event(send_button,
+                t.position.x.try_into().unwrap(),
+                t.position.y.try_into().unwrap()
+            ).unwrap();
+            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
+                info!("full update due to stylus back-button-touch");
+                vnc.request_update(full_rect(vnc.size()), false).unwrap();
+            }
+        }
+
+        for event in vnc.poll_iter() {
+            use client::Event;
+
+            match event {
+                Event::Disconnected(None) => break 'running,
+                Event::Disconnected(Some(error)) => {
+                    error!("server disconnected: {:?}", error);
+                    break 'running;
+                }
+                Event::PutPixels(vnc_rect, ref pixels) => {
+                    debug!("Put pixels");
+                    put_pixels(vnc_rect, pixels);
                 }
                 Event::CopyPixels { src, dst } => {
                     debug!("Copy pixels!");
