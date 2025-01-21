@@ -24,14 +24,6 @@ fxhash = "0.2.1"
 evdev-rs = "0.6.1"
 chrono = "0.4.39"
 
-[profile.release-minsized]
-inherits = "release"
-panic = "abort"
-codegen-units = 1
-opt-level = "z"
-lto = true
-strip = true
-
 [features]
 default = ["eink_device"]
 eink_device = []
