@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "name": "/",
+      "path": ".",
+    },
+    {
+      "path": "./client",
+    },
+    {
+      "path": "./emulator",
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "client": true,
+      "emulator": true,
+    }
+  }
+}
