@@ -1,0 +1,29 @@
+{
+  "folders": [
+    {
+      "name": "/",
+      "path": ".",
+    },
+    {
+      "path": "./client",
+    },
+    {
+      "path": "./emulator",
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "client": true,
+      "emulator": true,
+    },
+    "rust-analyzer.checkOnSave": false, // way too slow; I'll better run it on demand
+    "rust-analyzer.runnables.command": "cross",
+    "rust-analyzer.runnables.extraEnv": {
+      "CARGO_BUILD_TARGET": "arm-unknown-linux-musleabihf"
+    },
+    "rust-analyzer.runnables.extraArgs": [
+      "--target",
+      "arm-unknown-linux-musleabihf"
+    ]
+  }
+}
