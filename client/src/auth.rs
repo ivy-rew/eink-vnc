@@ -1,5 +1,5 @@
-use crate::vnc::client;
-use crate::vnc::client::{AuthChoice, AuthMethod};
+use vnc::client;
+use vnc::client::{AuthChoice, AuthMethod};
 use crate::Connection;
 
 pub fn authenticate(con: &Connection, methods: &[AuthMethod]) -> Option<AuthChoice> {
@@ -31,6 +31,7 @@ pub fn authenticate(con: &Connection, methods: &[AuthMethod]) -> Option<AuthChoi
                 }
                 _ => (),
             },
+            _ => (),
         }
     }
     None

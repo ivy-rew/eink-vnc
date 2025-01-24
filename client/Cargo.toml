@@ -9,6 +9,7 @@ name = "einkvnc"
 path = "src/main.rs"
 
 [dependencies]
+vnc = {git = "https://github.com/whitequark/rust-vnc.git"}
 log = "0.4"
 env_logger = "0.7"
 clap = "3.2"

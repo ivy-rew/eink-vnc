@@ -11,16 +11,14 @@ mod framebuffer;
 mod geom;
 mod color;
 mod input;
-mod security;
 mod settings;
-mod vnc;
 mod touch;
 mod config;
 mod auth;
 mod processing;
 
-use crate::vnc::Client;
 use crate::device::CURRENT_DEVICE;
+use vnc::Client;
 
 use einkvnc::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
 use config::Connection;
