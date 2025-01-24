@@ -11,9 +11,8 @@ pub mod framebuffer;
 #[macro_use]
 pub mod geom;
 pub mod input;
-mod security;
 pub mod settings;
-mod vnc;
+
 mod touch;
 pub mod config;
 mod auth;
@@ -23,7 +22,7 @@ pub mod processing;
 use crate::pixmap::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
-use crate::vnc::{client, Client, Encoding, Rect};
+use vnc::{client, Client, Encoding, Rect};
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
 use crate::processing::PostProcBin;

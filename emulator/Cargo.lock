@@ -124,6 +124,12 @@ checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
 name = "byteorder"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc10e8cc6b2580fda3f36eb6dc5316657f812a3df879a44a66fc9f0fdbc4855"
+
+[[package]]
+name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
@@ -223,19 +229,20 @@ name = "einkvnc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "byteorder",
+ "byteorder 1.5.0",
  "chrono",
  "clap",
  "env_logger 0.7.1",
  "evdev-rs",
- "flate2",
+ "flate2 1.0.35",
  "fxhash",
  "lazy_static",
  "libc",
- "log",
+ "log 0.4.22",
  "nix 0.24.3",
  "png",
  "serde",
+ "vnc",
 ]
 
 [[package]]
@@ -247,7 +254,7 @@ dependencies = [
  "ctrlc",
  "einkvnc",
  "env_logger 0.11.6",
- "log",
+ "log 0.4.22",
  "sdl2",
 ]
 
@@ -257,7 +264,7 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "186e05a59d4c50738528153b83b0b0194d3a29507dfec16eccd4b342903397d0"
 dependencies = [
- "log",
+ "log 0.4.22",
  "regex",
 ]
 
@@ -269,7 +276,7 @@ checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 dependencies = [
  "atty",
  "humantime 1.3.0",
- "log",
+ "log 0.4.22",
  "regex",
  "termcolor",
 ]
@@ -284,7 +291,7 @@ dependencies = [
  "anstyle",
  "env_filter",
  "humantime 2.1.0",
- "log",
+ "log 0.4.22",
 ]
 
 [[package]]
@@ -296,7 +303,7 @@ dependencies = [
  "bitflags 1.3.2",
  "evdev-sys",
  "libc",
- "log",
+ "log 0.4.22",
 ]
 
 [[package]]
@@ -321,6 +328,16 @@ dependencies = [
 
 [[package]]
 name = "flate2"
+version = "0.2.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6234dd4468ae5d1e2dbb06fe2b058696fdc50a339c68a393aefbf00bc81e423"
+dependencies = [
+ "libc",
+ "miniz-sys",
+]
+
+[[package]]
+name = "flate2"
 version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c936bfdafb507ebbf50b8074c54fa31c5be9a1e7e5f467dd659697041407d07c"
@@ -335,7 +352,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
- "byteorder",
+ "byteorder 1.5.0",
 ]
 
 [[package]]
@@ -431,6 +448,15 @@ checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
 
 [[package]]
 name = "log"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
+dependencies = [
+ "log 0.4.22",
+]
+
+[[package]]
+name = "log"
 version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
@@ -448,6 +474,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "miniz-sys"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e9e3ae51cea1576ceba0dde3d484d30e6e5b86dee0b2d412fe3a16a15c98202"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]
@@ -520,7 +556,7 @@ dependencies = [
  "bitflags 1.3.2",
  "crc32fast",
  "fdeflate",
- "flate2",
+ "flate2 1.0.35",
  "miniz_oxide",
 ]
 
@@ -683,6 +719,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "579a42fc0b8e0c63b76519a339be31bed574929511fa53c1a3acae26eb258f29"
 
 [[package]]
+name = "vnc"
+version = "0.4.0"
+source = "git+https://github.com/whitequark/rust-vnc.git#0697238f2706dd34a9a95c1640e385f6d8c02961"
+dependencies = [
+ "byteorder 0.5.3",
+ "flate2 0.2.20",
+ "log 0.3.9",
+]
+
+[[package]]
 name = "wasm-bindgen"
 version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -700,7 +746,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f89bb38646b4f81674e8f5c3fb81b562be1fd936d84320f3264486418519c79"
 dependencies = [
  "bumpalo",
- "log",
+ "log 0.4.22",
  "proc-macro2",
  "quote",
  "syn",
