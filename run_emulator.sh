@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 deps(){
 	sudo apt install libevdev-dev
 }
@@ -15,6 +14,9 @@ export PRODUCT=monza
 
 # !libra H20
 export PRODUCT=storm
+
+# avoid linker errors due to different target envs present for the 'client'
+unset CARGO_BUILD_TARGET
 
 cd emulator
 cargo run "$@"

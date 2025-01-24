@@ -17,9 +17,10 @@ mod vnc;
 mod touch;
 pub mod config;
 mod auth;
+mod pixmap;
 pub mod processing;
 
-pub use crate::framebuffer::image::ReadonlyPixmap;
+use crate::pixmap::ReadonlyPixmap;
 use crate::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
 use crate::geom::Rectangle;
 use crate::vnc::{client, Client, Encoding, Rect};
