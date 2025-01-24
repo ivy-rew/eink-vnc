@@ -149,11 +149,6 @@ impl Framebuffer for KoboFramebuffer1 {
 
     // Tell the driver that the screen needs to be redrawn.
     fn update(&mut self, rect: &Rectangle, mode: UpdateMode) -> Result<u32, Error> {
-        if rect.width() <= 1 || rect.height() <= 1 {
-            warn!("Invalid update rect!");
-            return Err(Error::msg("can't send framebuffer update"));
-        }
-
         let update_marker = self.token;
         let mark = CURRENT_DEVICE.mark();
         let color_samples = CURRENT_DEVICE.color_samples();
@@ -392,9 +387,12 @@ impl Framebuffer for KoboFramebuffer1 {
                 self.flags &= !EPDC_FLAG_ENABLE_INVERSION;
             }
         } else {
-            File::open("/proc/hwtcon/cmd").and_then(|mut file| {
+            OpenOptions::new()
+            .read(false)
+            .write(true)
+            .open("/proc/hwtcon/cmd").and_then(|mut file| {
                 file.write_all(if enable { b"night_mode 4" } else { b"night_mode 0" })
-            }).map_err(|e| eprintln!("{:#?}", e)).ok();
+            }).map_err(|e| eprintln!("Failed to invert colors: {:#?}", e)).ok();
         }
     }
 

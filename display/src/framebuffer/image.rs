@@ -1,10 +1,9 @@
-use super::{Framebuffer, UpdateMode};
-use crate::color::{GRAY12, RED, WHITE};
-use crate::color::Color;
-use crate::geom::{lerp, Rectangle};
-use anyhow::{format_err, Context, Error};
 use std::fs::File;
 use std::path::Path;
+use anyhow::{Error, Context, format_err};
+use super::{Framebuffer, UpdateMode};
+use crate::color::{Color, WHITE};
+use crate::geom::{Rectangle, lerp};
 
 #[derive(Debug, Clone)]
 pub struct Pixmap {
@@ -167,17 +166,12 @@ impl Framebuffer for Pixmap {
             return Err(format_err!("nothing to save"));
         }
         let (width, height) = self.dims();
-        let file =
-            File::create(path).with_context(|| format!("can't create output file {}", path))?;
+        let file = File::create(path).with_context(|| format!("can't create output file {}", path))?;
         let mut encoder = png::Encoder::new(file, width, height);
         encoder.set_depth(png::BitDepth::Eight);
         encoder.set_color(if self.samples == 3 { png::ColorType::Rgb } else { png::ColorType::Grayscale });
-        let mut writer = encoder
-            .write_header()
-            .with_context(|| format!("can't write PNG header for {}", path))?;
-        writer
-            .write_image_data(&self.data)
-            .with_context(|| format!("can't write PNG data to {}", path))?;
+        let mut writer = encoder.write_header().with_context(|| format!("can't write PNG header for {}", path))?;
+        writer.write_image_data(&self.data).with_context(|| format!("can't write PNG data to {}", path))?;
         Ok(())
     }
 
@@ -185,11 +179,14 @@ impl Framebuffer for Pixmap {
         Err(format_err!("unsupported"))
     }
 
-    fn set_monochrome(&mut self, _enable: bool) {}
+    fn set_monochrome(&mut self, _enable: bool) {
+    }
 
-    fn set_dithered(&mut self, _enable: bool) {}
+    fn set_dithered(&mut self, _enable: bool) {
+    }
 
-    fn set_inverted(&mut self, _enable: bool) {}
+    fn set_inverted(&mut self, _enable: bool) {
+    }
 
     fn monochrome(&self) -> bool {
         false
