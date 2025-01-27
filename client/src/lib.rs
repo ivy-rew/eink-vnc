@@ -12,6 +12,7 @@ pub mod vnc;
 pub mod processing;
 
 extern crate vnc as vnc_client;
+use draw::kobo::MapDelta;
 use vnc_client::{client, Client, Rect};
 
 use display::rect;
@@ -92,7 +93,8 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("postproc Δt: {}", elapsed_ms);
 
-                    draw::set_pixel_map_ro(fb, &vnc_rect, &pixmap);
+                    let delta: MapDelta = MapDelta { left: vnc_rect.left as u32, top: vnc_rect.top as u32 };
+                    draw::kobo::set_pixel_map_ro(fb, &delta, &pixmap);
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("draw Δt: {}", elapsed_ms);
 
@@ -114,14 +116,15 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                         let src_left = src.left as u32;
                         let src_top = src.top as u32;
                         let mut intermediary_pixmap =
-                            Pixmap::new(dst.width as u32, dst.height as u32, CURRENT_DEVICE.color_samples());
+                        Pixmap::new(dst.width as u32, dst.height as u32, CURRENT_DEVICE.color_samples());
                         for y in 0..intermediary_pixmap.height {
                             for x in 0..intermediary_pixmap.width {
                                 //let color = fb.get_pixel(src_left + x, src_top + y);
                                 //intermediary_pixmap.set_pixel(x, y, color);
                             }
                         }
-                        draw::set_pixel_map(fb, &dst, &intermediary_pixmap);
+                        let delta: MapDelta = MapDelta { left: dst.left as u32, top: dst.top as u32 };
+                        draw::kobo::set_pixel_map(fb, &delta, &intermediary_pixmap);
                     }
 
                     let delta_rect = draw::to_delta(&dst);

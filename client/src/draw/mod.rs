@@ -58,33 +58,6 @@ pub fn to_delta<'a>(vnc_rect: &'a Rect) -> Rectangle {
 }
 
 
-pub fn set_pixel_map_ro(fb: &mut Box<dyn Framebuffer>, vnc_rect: &Rect, pixmap: &ReadonlyPixmap){
-    #[cfg(feature = "eink_device")]
-    {
-        let left = vnc_rect.left as u32;
-        let top = vnc_rect.top as u32;
-        for y in 0..pixmap.height {
-            for x in 0..pixmap.width {
-                let px = x + left;
-                let py = y + top;
-                let color = pixmap.get_pixel(x, y);
-                fb.set_pixel(px, py, color);
-            }
-        }
-    }
-}
-
-pub fn set_pixel_map(fb: &mut Box<dyn Framebuffer>, vnc_rect: &Rect, pixmap: &Pixmap) {
-    let left = vnc_rect.left as u32;
-    let top = vnc_rect.top as u32;
-    for y in 0..pixmap.height {
-        for x in 0..pixmap.width {
-            let color = pixmap.get_pixel(x, y);
-            fb.set_pixel(left + x, top + y, color);
-        }
-    }
-}
-
 pub fn update(fb: &mut Box<dyn Framebuffer>, fb_rect: Rectangle, draw: &mut Draw) {
     draw.dirty_rects.clear();
     draw.dirty_rects_since_refresh.clear();
