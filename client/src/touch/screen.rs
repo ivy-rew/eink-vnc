@@ -34,7 +34,7 @@ pub fn touch_vnc(mut vnc: &mut Client, touch: Touch, last_button: u8) {
         touch.position.x.try_into().unwrap(),
         touch.position.y.try_into().unwrap()
     ).unwrap();
-    if (touch.stylus_back.is_some() && touch.stylus_back.unwrap().eq(&1)) {
+    if touch.stylus_back.is_some() && touch.stylus_back.unwrap().eq(&1) {
         info!("full update due to stylus back-button-touch");
         vnc.request_update(full_rect(vnc.size()), false).unwrap();
     }

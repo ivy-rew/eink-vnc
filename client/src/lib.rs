@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(unused_variables, unused_mut)]
 
 #[macro_use]
 extern crate log;
@@ -12,12 +12,11 @@ pub mod vnc;
 pub mod processing;
 
 extern crate vnc as vnc_client;
-use vnc_client::{client, Client, Encoding, Rect};
+use vnc_client::{client, Client, Rect};
 
-#[macro_use]
 use display::rect;
 use pixmap::ReadonlyPixmap;
-use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
+use display::framebuffer::{Framebuffer, Pixmap, UpdateMode};
 use display::geom::Rectangle;
 use display::device::CURRENT_DEVICE;
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
@@ -25,17 +24,15 @@ use crate::config::Config;
 use crate::processing::PostProcBin;
 
 use log::{debug, error, info};
-use clap::ArgMatches;
-use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc;
-use anyhow::{Context as ResultExt, Error};
+use anyhow::Error;
 
 
-pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
+pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
     #[cfg(feature = "eink_device")]
     debug!(
         "running on device model=\"{}\" /dpi={} /dims={}x{}", 
@@ -46,7 +43,7 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
     );
     
     let (width, height) = vnc.size();
-    let vnc_format = vnc.format();
+    vnc.format();
     const FRAME_MS: u64 = 1000 / 30;
     
     const MAX_DIRTY_REFRESHES: usize = 500;

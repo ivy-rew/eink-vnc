@@ -20,7 +20,7 @@ impl<'a> ReadonlyPixmap<'a> {
             Color::Gray(self.data[addr])
         } else {
             let max=self.data.len();
-            if (max < addr+4) {
+            if max < addr+4 {
                 return RED; // signal an invalid pixel request
             }
             Color::from_rgb(&self.data[addr..addr+3])

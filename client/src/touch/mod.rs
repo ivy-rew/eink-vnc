@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod mouse;
 mod listener;
 mod screen;
