@@ -1,7 +1,7 @@
 use display::device::CURRENT_DEVICE;
 use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
 
-use anyhow::{Context as ResultExt, Error};
+use anyhow::Context;
 
 const FB_DEVICE: &str = "/dev/fb0";
 

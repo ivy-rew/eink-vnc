@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 #[macro_use]
 extern crate log;
 extern crate byteorder;
@@ -12,7 +10,7 @@ mod vnc;
 
 use display::framebuffer::Framebuffer;
 use clap::ArgMatches;
-use anyhow::{Context as ResultExt, Error};
+use anyhow::Error;
 
 fn main() -> Result<(), Error> {
     env_logger::init();

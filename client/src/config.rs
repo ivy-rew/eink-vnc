@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use clap::{value_t, App, Arg, ArgMatches};
 use crate::processing::PostProcConfig;
 use crate::vnc::Connection;
