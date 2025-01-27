@@ -1,7 +1,5 @@
-use crate::config::Connection;
 use crate::vnc::auth;
-use vnc::{client, Client, Encoding, Rect};
-use crate::full_rect;
+use vnc::{Client, Encoding, Rect};
 
 pub fn connect(con: Connection) -> Client {
     info!("connecting to {}:{}", con.host, con.port);
@@ -39,4 +37,22 @@ pub fn connect(con: Connection) -> Client {
         .unwrap();
 
     vnc
+}
+
+fn full_rect(size: (u16,u16)) -> Rect {
+    Rect {
+        left: 0,
+        top: 0,
+        width: size.0,
+        height: size.1,
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Connection<'a> {
+    pub host: &'a str,
+    pub port: u16,
+    pub username: Option<&'a str>,
+    pub password: Option<&'a str>,
+    pub exclusive: bool,
 }

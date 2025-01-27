@@ -8,9 +8,9 @@ extern crate flate2;
 mod config;
 mod processing;
 mod kobo;
+mod vnc;
 
 use display::framebuffer::Framebuffer;
-use config::Connection;
 use clap::ArgMatches;
 use anyhow::{Context as ResultExt, Error};
 
