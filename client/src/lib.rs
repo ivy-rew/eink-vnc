@@ -36,6 +36,15 @@ use anyhow::{Context as ResultExt, Error};
 
 
 pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
+    #[cfg(feature = "eink_device")]
+    debug!(
+        "running on device model=\"{}\" /dpi={} /dims={}x{}", 
+        CURRENT_DEVICE.model,
+        CURRENT_DEVICE.dpi,
+        CURRENT_DEVICE.dims.0,
+        CURRENT_DEVICE.dims.1
+    );
+    
     let (width, height) = vnc.size();
     let vnc_format = vnc.format();
     const FRAME_MS: u64 = 1000 / 30;
