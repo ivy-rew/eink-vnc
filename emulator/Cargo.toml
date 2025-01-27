@@ -9,7 +9,7 @@ name = "einkvnc-emulator"
 path = "src/main.rs"
 
 [dependencies]
-display = { path = "../display" }
+display = { git = "https://github.com/ivy-rew/plato.git", branch = "split" }
 einkvnc = { path = "../client" }
 anyhow = "1.0.95"
 chrono = "0.4.39"
