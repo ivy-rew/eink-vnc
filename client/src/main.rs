@@ -5,8 +5,8 @@ extern crate flate2;
 
 mod config;
 mod processing;
-mod kobo;
 mod vnc;
+mod draw;
 
 use display::framebuffer::Framebuffer;
 use clap::ArgMatches;
@@ -18,7 +18,7 @@ fn main() -> Result<(), Error> {
     let config = einkvnc::config::Config::cli(&args);
 
     let mut vnc = einkvnc::vnc::connect(config.connection);
-    let mut fb: Box<dyn Framebuffer> = kobo::new_frame_buffer(config.rotate);
+    let mut fb: Box<dyn Framebuffer> = draw::kobo::new_frame_buffer(config.rotate);
     
     return einkvnc::run(&mut vnc, &mut fb, &config);
 }

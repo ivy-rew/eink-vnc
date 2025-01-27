@@ -7,7 +7,7 @@ extern crate flate2;
 
 mod touch;
 pub mod config;
-mod pixmap;
+mod draw;
 pub mod vnc;
 pub mod processing;
 
@@ -15,13 +15,12 @@ extern crate vnc as vnc_client;
 use vnc_client::{client, Client, Rect};
 
 use display::rect;
-use pixmap::ReadonlyPixmap;
-use display::framebuffer::{Framebuffer, Pixmap, UpdateMode};
-use display::geom::Rectangle;
+use display::framebuffer::{Framebuffer, Pixmap};
 use display::device::CURRENT_DEVICE;
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
 use crate::processing::PostProcBin;
+use crate::draw::Draw;
 
 use log::{debug, error, info};
 use std::thread;
@@ -31,158 +30,6 @@ use std::sync::mpsc::Receiver;
 use std::sync::mpsc;
 use anyhow::Error;
 
-
-pub struct Draw {
-    pub dirty_rects: Vec<Rectangle>,
-    pub dirty_rects_since_refresh: Vec<Rectangle>,
-    pub has_drawn_once: bool,
-    pub dirty_update_count: usize,
-    pub time_at_last_draw: Instant,
-}
-
-impl Draw {
-    pub fn new() -> Draw{
-        return Draw {
-            dirty_rects: Vec::<Rectangle>::new(),
-            dirty_rects_since_refresh: Vec::<Rectangle>::new(),
-            has_drawn_once: false, 
-            dirty_update_count: 0,
-            time_at_last_draw: Instant::now(),
-        }
-    }
-}
-
-pub fn to_map<'a>(vnc_rect: &'a Rect, pixels: &'a Vec<u8>) -> ReadonlyPixmap<'a> {
-    let w = vnc_rect.width as u32;
-    let h = vnc_rect.height as u32;
-    
-    let colors = if CURRENT_DEVICE.color_samples() == 1 { 1 } else { 4 };
-    let pixmap = ReadonlyPixmap {
-        width: w as u32,
-        height: h as u32,
-        data: pixels,
-        samples: colors,
-    };
-    debug!("Put pixels w={} h={} w*h={} size={}",w,h,w*h,pixels.len());
-    return pixmap;
-}
-
-pub fn to_delta<'a>(vnc_rect: &'a Rect) -> Rectangle {
-    let w = vnc_rect.width as i32;
-    let h = vnc_rect.height as i32;
-    let l = vnc_rect.left as i32;
-    let t = vnc_rect.top as i32;
-    let delta_rect = rect![l, t, l + w, t + h];
-    return delta_rect;
-}
-
-
-pub fn set_pixel_map_ro(fb: &mut Box<dyn Framebuffer>, vnc_rect: &Rect, pixmap: &ReadonlyPixmap){
-    #[cfg(feature = "eink_device")]
-    {
-        let left = vnc_rect.left as u32;
-        let top = vnc_rect.top as u32;
-        for y in 0..pixmap.height {
-            for x in 0..pixmap.width {
-                let px = x + left;
-                let py = y + top;
-                let color = pixmap.get_pixel(x, y);
-                fb.set_pixel(px, py, color);
-            }
-        }
-    }
-}
-
-pub fn set_pixel_map(fb: &mut Box<dyn Framebuffer>, vnc_rect: &Rect, pixmap: &Pixmap) {
-    let left = vnc_rect.left as u32;
-    let top = vnc_rect.top as u32;
-    for y in 0..pixmap.height {
-        for x in 0..pixmap.width {
-            let color = pixmap.get_pixel(x, y);
-            fb.set_pixel(left + x, top + y, color);
-        }
-    }
-}
-
-pub fn update(fb: &mut Box<dyn Framebuffer>, fb_rect: Rectangle, draw: &mut Draw) {
-    draw.dirty_rects.clear();
-    draw.dirty_rects_since_refresh.clear();
-    #[cfg(feature = "eink_device")]
-    {
-        if !draw.has_drawn_once || draw.dirty_update_count > MAX_DIRTY_REFRESHES {
-            fb.update(&fb_rect, UpdateMode::Full).ok();
-            draw.dirty_update_count = 0;
-            draw.has_drawn_once = true;
-        } else {
-            fb.update(&fb_rect, UpdateMode::Partial).ok();
-        }
-    }
-}
-
-pub fn refresh(fb: &mut Box<dyn Framebuffer>, draw: &mut Draw) {
-    for dr in &draw.dirty_rects_since_refresh {
-        #[cfg(feature = "eink_device")]
-        {
-            fb.update(&dr, UpdateMode::Full).ok();
-        }
-    }
-    draw.dirty_update_count = 0;
-    draw.dirty_rects_since_refresh.clear();
-}
-
-fn draw_end(fb: &mut Box<dyn Framebuffer>, draw: &mut Draw){
-    if !draw.has_drawn_once {
-        draw.has_drawn_once = draw.dirty_rects.len() > 0;
-    }
-
-    draw.dirty_update_count += 1;
-
-    if draw.dirty_update_count > MAX_DIRTY_REFRESHES {
-        info!("Full refresh!");
-        refresh(fb, draw);
-    } else {
-        for dr in &draw.dirty_rects {
-            debug!("Updating dirty rect {:?}", dr);
-
-            #[cfg(feature = "eink_device")]
-            {
-                if dr.height() < 100 && dr.width() < 100 {
-                    debug!("Fast mono update!");
-                    fb.update(&dr, UpdateMode::FastMono).ok();
-                } else {
-                    fb.update(&dr, UpdateMode::Partial).ok();
-                }
-            }
-
-            push_to_dirty_rect_list(&mut draw.dirty_rects_since_refresh, *dr);
-        }
-
-        draw.time_at_last_draw = Instant::now();
-    }
-
-    draw.dirty_rects.clear();
-}
-
-fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
-    for dr in list.iter_mut() {
-        if dr.contains(&rect) {
-            return;
-        }
-        if rect.contains(&dr) {
-            *dr = rect;
-            return;
-        }
-        if rect.extends(&dr) {
-            dr.absorb(&rect);
-            return;
-        }
-    }
-
-    list.push(rect);
-}
-
-
-const MAX_DIRTY_REFRESHES: usize = 500;
 
 pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
     #[cfg(feature = "eink_device")]
@@ -241,20 +88,20 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                         .step_by(steps)
                         .map(|&c| post_proc_bin.data[c as usize])
                         .collect();
-                    let pixmap = to_map(&vnc_rect, &post_process);
+                    let pixmap = draw::to_map(&vnc_rect, &post_process);
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("postproc Δt: {}", elapsed_ms);
 
-                    set_pixel_map_ro(fb, &vnc_rect, &pixmap);
+                    draw::set_pixel_map_ro(fb, &vnc_rect, &pixmap);
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("draw Δt: {}", elapsed_ms);
 
-                    let delta_rect = to_delta(&vnc_rect);
+                    let delta_rect = draw::to_delta(&vnc_rect);
                     let fb_rect = rect![0, 0, width as i32, height as i32];
                     if delta_rect == fb_rect {
-                        update(fb, fb_rect, &mut draw);
+                        draw::update(fb, fb_rect, &mut draw);
                     } else {
-                        push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
+                        draw::push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                     }
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("rects Δt: {}", elapsed_ms);
@@ -274,15 +121,15 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                                 //intermediary_pixmap.set_pixel(x, y, color);
                             }
                         }
-                        set_pixel_map(fb, &dst, &intermediary_pixmap);
+                        draw::set_pixel_map(fb, &dst, &intermediary_pixmap);
                     }
 
-                    let delta_rect = to_delta(&dst);
-                    push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
+                    let delta_rect = draw::to_delta(&dst);
+                    draw::push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                 }
                 Event::EndOfFrame => {
                     debug!("End of frame!");
-                    draw_end(fb, &mut draw);
+                    draw::draw_end(fb, &mut draw);
                 }
                 // x => info!("{:?}", x), /* ignore unsupported events */
                 _ => (),
@@ -291,7 +138,7 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
 
         if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
             if draw.dirty_rects_since_refresh.len() > 0 && draw.time_at_last_draw.elapsed().as_secs() > 3 {
-                refresh(fb, &mut draw);
+                draw::refresh(fb, &mut draw);
             }
             if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
                 thread::sleep(Duration::from_millis(
