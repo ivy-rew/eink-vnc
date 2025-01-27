@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(unused_variables, unused_mut)]
 
 #[macro_use]
 extern crate log;
@@ -7,68 +7,52 @@ extern crate flate2;
 
 mod touch;
 pub mod config;
-mod auth;
 mod pixmap;
+pub mod vnc;
 pub mod processing;
 
-use vnc::{client, Client, Encoding, Rect};
-#[macro_use]
+extern crate vnc as vnc_client;
+use vnc_client::{client, Client, Rect};
+
 use display::rect;
 use pixmap::ReadonlyPixmap;
-use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap, UpdateMode};
+use display::framebuffer::{Framebuffer, Pixmap, UpdateMode};
 use display::geom::Rectangle;
 use display::device::CURRENT_DEVICE;
 use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
 use crate::processing::PostProcBin;
 
-use config::Connection;
 use log::{debug, error, info};
-use clap::ArgMatches;
-use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc;
-use anyhow::{Context as ResultExt, Error};
+use anyhow::Error;
 
 
-pub fn connect(con: Connection) -> Client {
-    info!("connecting to {}:{}", con.host, con.port);
-    let stream = match std::net::TcpStream::connect((con.host, con.port)) {
-        Ok(stream) => stream,
-        Err(error) => {
-            error!("cannot connect to {}:{}: {}", con.host, con.port, error);
-            std::process::exit(1)
+pub struct Draw {
+    pub dirty_rects: Vec<Rectangle>,
+    pub dirty_rects_since_refresh: Vec<Rectangle>,
+    pub has_drawn_once: bool,
+    pub dirty_update_count: usize,
+    pub time_at_last_draw: Instant,
+}
+
+impl Draw {
+    pub fn new() -> Draw{
+        return Draw {
+            dirty_rects: Vec::<Rectangle>::new(),
+            dirty_rects_since_refresh: Vec::<Rectangle>::new(),
+            has_drawn_once: false, 
+            dirty_update_count: 0,
+            time_at_last_draw: Instant::now(),
         }
-    };
+    }
+}
 
-    let mut vnc = match Client::from_tcp_stream(stream, !con.exclusive, |methods| auth::authenticate(&con, methods)) {
-        Ok(vnc) => vnc,
-        Err(error) => {
-            error!("cannot initialize VNC session: {}", error);
-            std::process::exit(1)
-        }
-    };
-
-    let (width, height) = vnc.size();
-    info!(
-        "connected to \"{}\", {}x{} framebuffer",
-        vnc.name(),
-        width,
-        height
-    );
-
-    let vnc_format = vnc.format();
-    info!("received {:?}", vnc_format);
-
-    vnc.set_encodings(&[Encoding::CopyRect, Encoding::Zrle])
-        .unwrap();
-
-    vnc.request_update(full_rect(vnc.size()), false)
-        .unwrap();
-
+pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
     #[cfg(feature = "eink_device")]
     debug!(
         "running on device model=\"{}\" /dpi={} /dims={}x{}", 
@@ -77,58 +61,32 @@ pub fn connect(con: Connection) -> Client {
         CURRENT_DEVICE.dims.0,
         CURRENT_DEVICE.dims.1
     );
-
-    vnc
-}
-
-
-pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
-    let (width, height) = vnc.size();
-    let vnc_format = vnc.format();
-    const FRAME_MS: u64 = 1000 / 30;
     
+    let (width, height) = vnc.size();
+    vnc.format();
+    
+    const FRAME_MS: u64 = 1000 / 30;
     const MAX_DIRTY_REFRESHES: usize = 500;
     
-    let mut dirty_rects: Vec<Rectangle> = Vec::new();
-    let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
-    let mut has_drawn_once = false;
-    let mut dirty_update_count = 0;
-    
-    let mut time_at_last_draw = Instant::now();
-    
-    let fb_rect = rect![0, 0, width as i32, height as i32];
+    let mut draw = Draw::new();
     
     let post_proc_bin = PostProcBin::new(&config.processing);
     
     let touch_enabled: bool = !config.view_only;
-    let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events(config.touch_input.to_string())
+    let touch_display: Receiver<Touch> = if touch_enabled {
+        touch::record_screen(config.touch_input.to_string())
     } else {
         mpsc::channel().1 // no-op; never sending anything
     };
 
     let mut last_button: u8 = MOUSE_UNKNOWN;
-    let mut last_button_pen: u8 = MOUSE_UNKNOWN;
-    let mut last_full_touch: Option<Touch> = None;
 
     'running: loop {
         let time_at_sol = Instant::now();
     
-        for t in rx.try_iter() {
-            last_button = mouse_btn_to_vnc(t.button).unwrap_or(last_button);
-            let send_button: u8 = if t.distance.is_some() && t.distance.unwrap().is_positive() {
-                MOUSE_UNKNOWN // not-touching; keep mouse up (pre-serving any passed last_button state)
-            } else {
-                last_button
-            };
-            vnc.send_pointer_event(send_button,
-                t.position.x.try_into().unwrap(),
-                t.position.y.try_into().unwrap()
-            ).unwrap();
-            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
-                info!("full update due to stylus back-button-touch");
-                vnc.request_update(full_rect(vnc.size()), false).unwrap();
-            }
+        for touch in touch_display.try_iter() {
+            last_button = mouse_btn_to_vnc(touch.button).unwrap_or(last_button);
+            touch::touch_vnc(vnc, touch, last_button);
         }
 
         for event in vnc.poll_iter() {
@@ -193,21 +151,22 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                     let t = vnc_rect.top as i32;
 
                     let delta_rect = rect![l, t, l + w, t + h];
+                    let fb_rect = rect![0, 0, width as i32, height as i32];
                     if delta_rect == fb_rect {
-                        dirty_rects.clear();
-                        dirty_rects_since_refresh.clear();
+                        draw.dirty_rects.clear();
+                        draw.dirty_rects_since_refresh.clear();
                         #[cfg(feature = "eink_device")]
                         {
-                            if !has_drawn_once || dirty_update_count > MAX_DIRTY_REFRESHES {
+                            if !draw.has_drawn_once || draw.dirty_update_count > MAX_DIRTY_REFRESHES {
                                 fb.update(&fb_rect, UpdateMode::Full).ok();
-                                dirty_update_count = 0;
-                                has_drawn_once = true;
+                                draw.dirty_update_count = 0;
+                                draw.has_drawn_once = true;
                             } else {
                                 fb.update(&fb_rect, UpdateMode::Partial).ok();
                             }
                         }
                     } else {
-                        push_to_dirty_rect_list(&mut dirty_rects, delta_rect);
+                        push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                     }
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
@@ -248,29 +207,29 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                         (dst.left + dst.width) as i32,
                         (dst.top + dst.height) as i32
                     ];
-                    push_to_dirty_rect_list(&mut dirty_rects, delta_rect);
+                    push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                 }
                 Event::EndOfFrame => {
                     debug!("End of frame!");
 
-                    if !has_drawn_once {
-                        has_drawn_once = dirty_rects.len() > 0;
+                    if !draw.has_drawn_once {
+                        draw.has_drawn_once = draw.dirty_rects.len() > 0;
                     }
 
-                    dirty_update_count += 1;
+                    draw.dirty_update_count += 1;
 
-                    if dirty_update_count > MAX_DIRTY_REFRESHES {
+                    if draw.dirty_update_count > MAX_DIRTY_REFRESHES {
                         info!("Full refresh!");
-                        for dr in &dirty_rects_since_refresh {
+                        for dr in &draw.dirty_rects_since_refresh {
                             #[cfg(feature = "eink_device")]
                             {
                                 fb.update(&dr, UpdateMode::Full).ok();
                             }
                         }
-                        dirty_update_count = 0;
-                        dirty_rects_since_refresh.clear();
+                        draw.dirty_update_count = 0;
+                        draw.dirty_rects_since_refresh.clear();
                     } else {
-                        for dr in &dirty_rects {
+                        for dr in &draw.dirty_rects {
                             debug!("Updating dirty rect {:?}", dr);
 
                             #[cfg(feature = "eink_device")]
@@ -283,13 +242,13 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
                                 }
                             }
 
-                            push_to_dirty_rect_list(&mut dirty_rects_since_refresh, *dr);
+                            push_to_dirty_rect_list(&mut draw.dirty_rects_since_refresh, *dr);
                         }
 
-                        time_at_last_draw = Instant::now();
+                        draw.time_at_last_draw = Instant::now();
                     }
 
-                    dirty_rects.clear();
+                    draw.dirty_rects.clear();
                 }
                 // x => info!("{:?}", x), /* ignore unsupported events */
                 _ => (),
@@ -297,15 +256,15 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
         }
 
         if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
-            if dirty_rects_since_refresh.len() > 0 && time_at_last_draw.elapsed().as_secs() > 3 {
-                for dr in &dirty_rects_since_refresh {
+            if draw.dirty_rects_since_refresh.len() > 0 && draw.time_at_last_draw.elapsed().as_secs() > 3 {
+                for dr in &draw.dirty_rects_since_refresh {
                     #[cfg(feature = "eink_device")]
                     {
                         fb.update(&dr, UpdateMode::Full).ok();
                     }
                 }
-                dirty_update_count = 0;
-                dirty_rects_since_refresh.clear();
+                draw.dirty_update_count = 0;
+                draw.dirty_rects_since_refresh.clear();
             }
 
             if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
@@ -351,23 +310,6 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     }
 
     list.push(rect);
-}
-
-fn record_touch_events(touch_input: String) -> Receiver<Touch> {
-    let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        let screen = TouchEventListener::open_input(touch_input).unwrap();
-        loop {
-            match screen.next_touch(None) {
-                Some(touch) => {
-                    debug!("touched on screen {:?}", touch.position);
-                    tx.send(touch).unwrap();
-                },
-                None => {}
-            };
-        }
-    });
-    return rx;
 }
 
 pub fn full_rect(size: (u16,u16)) -> Rect {

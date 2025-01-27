@@ -1,3 +1,4 @@
+#![allow(unused)]
 
 #[repr(align(256))]
 pub struct PostProcBin {

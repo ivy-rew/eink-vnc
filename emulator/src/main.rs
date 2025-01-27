@@ -21,7 +21,7 @@ fn main() -> Result<(), Error> {
     env_logger::init();
 
     let config = local_config();
-    let mut vnc = einkvnc::connect(config.connection);
+    let mut vnc = einkvnc::vnc::connect(config.connection);
 
     let (width, height) = CURRENT_DEVICE.dims;
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));
@@ -37,7 +37,7 @@ fn main() -> Result<(), Error> {
 
 fn local_config() -> Config<'static> {
     Config{
-        connection: einkvnc::config::Connection { host: "localhost", port: 5901, username: None, password: Some("123456"), exclusive: false },
+        connection: einkvnc::vnc::Connection { host: "localhost", port: 5901, username: None, password: Some("123456"), exclusive: false },
         processing: einkvnc::processing::PostProcConfig { contrast_exp: 1.1, contrast_gray_point: 224.0, white_cutoff: 225 },
         rotate: 1,
         view_only: true,

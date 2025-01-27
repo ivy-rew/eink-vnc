@@ -1,55 +1,24 @@
-#![allow(unused)]
-
 #[macro_use]
 extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
 mod config;
-mod auth;
 mod processing;
+mod kobo;
+mod vnc;
 
-use vnc::Client;
-use display::device::CURRENT_DEVICE;
-use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
-use config::Connection;
+use display::framebuffer::Framebuffer;
 use clap::ArgMatches;
-use anyhow::{Context as ResultExt, Error};
-
-const FB_DEVICE: &str = "/dev/fb0";
-
+use anyhow::Error;
 
 fn main() -> Result<(), Error> {
     env_logger::init();
     let args: ArgMatches = einkvnc::config::Config::arguments();
     let config = einkvnc::config::Config::cli(&args);
 
-    let mut vnc = einkvnc::connect(config.connection);
-    let mut fb: Box<dyn Framebuffer> = kobo_frame_buffer(config.rotate);
+    let mut vnc = einkvnc::vnc::connect(config.connection);
+    let mut fb: Box<dyn Framebuffer> = kobo::new_frame_buffer(config.rotate);
     
     return einkvnc::run(&mut vnc, &mut fb, &config);
 }
-
-pub fn kobo_frame_buffer(rotate: i8) -> Box<dyn Framebuffer>{
-    let mut fb: Box<dyn Framebuffer> = if CURRENT_DEVICE.mark() != 8 {
-        Box::new(
-            KoboFramebuffer1::new(FB_DEVICE)
-                .context("can't create framebuffer")
-                .unwrap(),
-        )
-    } else {
-        Box::new(
-            KoboFramebuffer2::new(FB_DEVICE)
-                .context("can't create framebuffer")
-                .unwrap(),
-        )
-    };
-
-    #[cfg(feature = "eink_device")]
-    {
-        fb.set_rotation(rotate).ok();
-    }
-    fb
-}
-
-

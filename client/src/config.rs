@@ -1,5 +1,8 @@
+#![allow(unused)]
+
 use clap::{value_t, App, Arg, ArgMatches};
 use crate::processing::PostProcConfig;
+use crate::vnc::Connection;
 
 pub struct Config<'a> {
     pub connection: Connection<'a>,
@@ -114,13 +117,3 @@ impl Config<'static> {
     }
 
 }
-
-#[derive(Debug, Copy, Clone)]
-pub struct Connection<'a> {
-    pub host: &'a str,
-    pub port: u16,
-    pub username: Option<&'a str>,
-    pub password: Option<&'a str>,
-    pub exclusive: bool,
-}
-
