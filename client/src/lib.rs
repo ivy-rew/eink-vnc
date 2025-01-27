@@ -7,11 +7,13 @@ extern crate flate2;
 
 mod touch;
 pub mod config;
-mod auth;
 mod pixmap;
+pub mod vnc;
 pub mod processing;
 
-use vnc::{client, Client, Encoding, Rect};
+extern crate vnc as vnc_client;
+use vnc_client::{client, Client, Encoding, Rect};
+
 #[macro_use]
 use display::rect;
 use pixmap::ReadonlyPixmap;
@@ -22,7 +24,6 @@ use crate::touch::{Touch, TouchEventListener, mouse_btn_to_vnc, MOUSE_UNKNOWN};
 use crate::config::Config;
 use crate::processing::PostProcBin;
 
-use config::Connection;
 use log::{debug, error, info};
 use clap::ArgMatches;
 use std::str::FromStr;
@@ -32,54 +33,6 @@ use std::time::Instant;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc;
 use anyhow::{Context as ResultExt, Error};
-
-
-pub fn connect(con: Connection) -> Client {
-    info!("connecting to {}:{}", con.host, con.port);
-    let stream = match std::net::TcpStream::connect((con.host, con.port)) {
-        Ok(stream) => stream,
-        Err(error) => {
-            error!("cannot connect to {}:{}: {}", con.host, con.port, error);
-            std::process::exit(1)
-        }
-    };
-
-    let mut vnc = match Client::from_tcp_stream(stream, !con.exclusive, |methods| auth::authenticate(&con, methods)) {
-        Ok(vnc) => vnc,
-        Err(error) => {
-            error!("cannot initialize VNC session: {}", error);
-            std::process::exit(1)
-        }
-    };
-
-    let (width, height) = vnc.size();
-    info!(
-        "connected to \"{}\", {}x{} framebuffer",
-        vnc.name(),
-        width,
-        height
-    );
-
-    let vnc_format = vnc.format();
-    info!("received {:?}", vnc_format);
-
-    vnc.set_encodings(&[Encoding::CopyRect, Encoding::Zrle])
-        .unwrap();
-
-    vnc.request_update(full_rect(vnc.size()), false)
-        .unwrap();
-
-    #[cfg(feature = "eink_device")]
-    debug!(
-        "running on device model=\"{}\" /dpi={} /dims={}x{}", 
-        CURRENT_DEVICE.model,
-        CURRENT_DEVICE.dpi,
-        CURRENT_DEVICE.dims.0,
-        CURRENT_DEVICE.dims.1
-    );
-
-    vnc
-}
 
 
 pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {

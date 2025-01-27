@@ -1,6 +1,6 @@
 use vnc::client;
 use vnc::client::{AuthChoice, AuthMethod};
-use crate::Connection;
+use crate::config::Connection;
 
 pub fn authenticate(con: &Connection, methods: &[AuthMethod]) -> Option<AuthChoice> {
     debug!("available authentication methods: {:?}", methods);

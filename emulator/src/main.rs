@@ -21,7 +21,7 @@ fn main() -> Result<(), Error> {
     env_logger::init();
 
     let config = local_config();
-    let mut vnc = einkvnc::connect(config.connection);
+    let mut vnc = einkvnc::vnc::connect(config.connection);
 
     let (width, height) = CURRENT_DEVICE.dims;
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));

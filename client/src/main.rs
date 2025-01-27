@@ -6,10 +6,8 @@ extern crate byteorder;
 extern crate flate2;
 
 mod config;
-mod auth;
 mod processing;
 
-use vnc::Client;
 use display::device::CURRENT_DEVICE;
 use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
 use config::Connection;
@@ -24,7 +22,7 @@ fn main() -> Result<(), Error> {
     let args: ArgMatches = einkvnc::config::Config::arguments();
     let config = einkvnc::config::Config::cli(&args);
 
-    let mut vnc = einkvnc::connect(config.connection);
+    let mut vnc = einkvnc::vnc::connect(config.connection);
     let mut fb: Box<dyn Framebuffer> = kobo_frame_buffer(config.rotate);
     
     return einkvnc::run(&mut vnc, &mut fb, &config);
@@ -49,6 +47,16 @@ pub fn kobo_frame_buffer(rotate: i8) -> Box<dyn Framebuffer>{
     {
         fb.set_rotation(rotate).ok();
     }
+
+    #[cfg(feature = "eink_device")]
+    debug!(
+        "running on device model=\"{}\" /dpi={} /dims={}x{}", 
+        CURRENT_DEVICE.model,
+        CURRENT_DEVICE.dpi,
+        CURRENT_DEVICE.dims.0,
+        CURRENT_DEVICE.dims.1
+    );
+
     fb
 }
 
