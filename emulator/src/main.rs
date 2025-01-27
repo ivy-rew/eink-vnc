@@ -10,8 +10,8 @@ use std::cmp;
 use anyhow::{Context as ResultExt, Error};
 use einkvnc::config::Config;
 use localbuffer::FBCanvas;
-use einkvnc::framebuffer::Framebuffer;
-use einkvnc::device::CURRENT_DEVICE;
+use display::framebuffer::Framebuffer;
+use display::device::CURRENT_DEVICE;
 
 pub const APP_NAME: &str = "EinkVNC Emulator";
 

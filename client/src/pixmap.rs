@@ -1,4 +1,4 @@
-use crate::color::{Color, WHITE};
+use display::color::{Color, WHITE};
 pub const RED: Color = Color::Rgb(255, 0, 0);
 
 #[derive(Debug, Clone)]

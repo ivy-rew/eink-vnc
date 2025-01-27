@@ -9,6 +9,7 @@ name = "einkvnc-emulator"
 path = "src/main.rs"
 
 [dependencies]
+display = { path = "../display" }
 einkvnc = { path = "../client" }
 anyhow = "1.0.95"
 chrono = "0.4.39"

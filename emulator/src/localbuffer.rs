@@ -3,9 +3,9 @@ use sdl2::rect::Point as SdlPoint;
 use sdl2::rect::Rect as SdlRect;
 use sdl2::pixels::{Color as SdlColor, PixelFormatEnum};
 use sdl2::render::{WindowCanvas, BlendMode};
-use einkvnc::framebuffer::{Framebuffer, UpdateMode};
-use einkvnc::geom::{Rectangle, Axis};
-use einkvnc::color::Color;
+use display::framebuffer::{Framebuffer, UpdateMode};
+use display::geom::{Rectangle, Axis};
+use display::color::Color;
 use anyhow::{Context as ResultExt, Error};
 use chrono::Local;
 

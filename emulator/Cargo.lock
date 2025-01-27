@@ -225,6 +225,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "display"
+version = "0.9.44"
+dependencies = [
+ "anyhow",
+ "fxhash",
+ "lazy_static",
+ "libc",
+ "nix 0.29.0",
+ "png",
+ "serde",
+]
+
+[[package]]
 name = "einkvnc"
 version = "0.1.0"
 dependencies = [
@@ -232,6 +245,7 @@ dependencies = [
  "byteorder 1.5.0",
  "chrono",
  "clap",
+ "display",
  "env_logger 0.7.1",
  "evdev-rs",
  "flate2 1.0.35",
@@ -252,6 +266,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "ctrlc",
+ "display",
  "einkvnc",
  "env_logger 0.11.6",
  "log 0.4.22",

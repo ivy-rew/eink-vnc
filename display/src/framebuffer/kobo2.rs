@@ -230,7 +230,6 @@ impl KoboFramebuffer2 {
             c
         })
     }
-
 }
 
 impl Framebuffer for KoboFramebuffer2 {

@@ -5,22 +5,13 @@ extern crate log;
 extern crate byteorder;
 extern crate flate2;
 
-mod device;
-mod framebuffer;
-#[macro_use]
-mod geom;
-mod color;
-mod input;
-mod settings;
-mod touch;
 mod config;
 mod auth;
 mod processing;
 
-use crate::device::CURRENT_DEVICE;
 use vnc::Client;
-
-use einkvnc::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
+use display::device::CURRENT_DEVICE;
+use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2};
 use config::Connection;
 use clap::ArgMatches;
 use anyhow::{Context as ResultExt, Error};
