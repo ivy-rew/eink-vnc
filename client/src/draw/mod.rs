@@ -2,15 +2,14 @@
 
 pub mod kobo;
 pub mod pixmap;
+pub mod util;
 
-use display::rect;
-use display::geom::Rectangle;
-use display::framebuffer::{Framebuffer, Pixmap, UpdateMode};
 use display::device::CURRENT_DEVICE;
+use display::framebuffer::{Framebuffer, Pixmap, UpdateMode};
+use display::geom::Rectangle;
+use display::rect;
 use std::time::Instant;
 use vnc::Rect;
-use pixmap::ReadonlyPixmap;
-
 
 const MAX_DIRTY_REFRESHES: usize = 500;
 pub struct Draw {
@@ -22,41 +21,16 @@ pub struct Draw {
 }
 
 impl Draw {
-    pub fn new() -> Draw{
+    pub fn new() -> Draw {
         return Draw {
             dirty_rects: Vec::<Rectangle>::new(),
             dirty_rects_since_refresh: Vec::<Rectangle>::new(),
-            has_drawn_once: false, 
+            has_drawn_once: false,
             dirty_update_count: 0,
             time_at_last_draw: Instant::now(),
-        }
+        };
     }
 }
-
-pub fn to_map<'a>(vnc_rect: &'a Rect, pixels: &'a Vec<u8>) -> ReadonlyPixmap<'a> {
-    let w = vnc_rect.width as u32;
-    let h = vnc_rect.height as u32;
-    
-    let colors = if CURRENT_DEVICE.color_samples() == 1 { 1 } else { 4 };
-    let pixmap = ReadonlyPixmap {
-        width: w as u32,
-        height: h as u32,
-        data: pixels,
-        samples: colors,
-    };
-    debug!("Put pixels w={} h={} w*h={} size={}",w,h,w*h,pixels.len());
-    return pixmap;
-}
-
-pub fn to_delta<'a>(vnc_rect: &'a Rect) -> Rectangle {
-    let w = vnc_rect.width as i32;
-    let h = vnc_rect.height as i32;
-    let l = vnc_rect.left as i32;
-    let t = vnc_rect.top as i32;
-    let delta_rect = rect![l, t, l + w, t + h];
-    return delta_rect;
-}
-
 
 pub fn update(fb: &mut Box<dyn Framebuffer>, fb_rect: Rectangle, draw: &mut Draw) {
     draw.dirty_rects.clear();
@@ -84,7 +58,7 @@ pub fn refresh(fb: &mut Box<dyn Framebuffer>, draw: &mut Draw) {
     draw.dirty_rects_since_refresh.clear();
 }
 
-pub fn draw_end(fb: &mut Box<dyn Framebuffer>, draw: &mut Draw){
+pub fn draw_end(fb: &mut Box<dyn Framebuffer>, draw: &mut Draw) {
     if !draw.has_drawn_once {
         draw.has_drawn_once = draw.dirty_rects.len() > 0;
     }

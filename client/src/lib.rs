@@ -12,7 +12,6 @@ pub mod vnc;
 pub mod processing;
 
 extern crate vnc as vnc_client;
-use draw::kobo::MapDelta;
 use vnc_client::{client, Client, Rect};
 
 use display::rect;
@@ -89,16 +88,18 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                         .step_by(steps)
                         .map(|&c| post_proc_bin.data[c as usize])
                         .collect();
-                    let pixmap = draw::to_map(&vnc_rect, &post_process);
+                    let pixmap = draw::util::to_map(&vnc_rect, &post_process);
+                    debug!("Put pixels w={} h={} w*h={} size={}",
+                        pixmap.width, pixmap.height, pixmap.width*pixmap.height, pixmap.data.len());
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("postproc Δt: {}", elapsed_ms);
 
-                    let delta: MapDelta = MapDelta { left: vnc_rect.left as u32, top: vnc_rect.top as u32 };
+                    let delta = draw::util::to_delta_map(&vnc_rect);
                     draw::kobo::set_pixel_map_ro(fb, &delta, &pixmap);
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("draw Δt: {}", elapsed_ms);
 
-                    let delta_rect = draw::to_delta(&vnc_rect);
+                    let delta_rect = draw::util::to_delta_rect(&vnc_rect);
                     let fb_rect = rect![0, 0, width as i32, height as i32];
                     if delta_rect == fb_rect {
                         draw::update(fb, fb_rect, &mut draw);
@@ -123,11 +124,11 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                                 //intermediary_pixmap.set_pixel(x, y, color);
                             }
                         }
-                        let delta: MapDelta = MapDelta { left: dst.left as u32, top: dst.top as u32 };
+                        let delta = draw::util::to_delta_map(&dst);
                         draw::kobo::set_pixel_map(fb, &delta, &intermediary_pixmap);
                     }
 
-                    let delta_rect = draw::to_delta(&dst);
+                    let delta_rect = draw::util::to_delta_rect(&dst);
                     draw::push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                 }
                 Event::EndOfFrame => {

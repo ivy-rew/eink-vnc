@@ -1,14 +1,14 @@
 use display::device::CURRENT_DEVICE;
 use display::framebuffer::{Framebuffer, KoboFramebuffer1, KoboFramebuffer2, Pixmap};
 
+use crate::draw::pixmap::ReadonlyPixmap;
 use vnc::Rect;
-use super::ReadonlyPixmap;
 
 use anyhow::Context;
 
 const FB_DEVICE: &str = "/dev/fb0";
 
-pub fn new_frame_buffer(rotate: i8) -> Box<dyn Framebuffer>{
+pub fn new_frame_buffer(rotate: i8) -> Box<dyn Framebuffer> {
     let mut fb: Box<dyn Framebuffer> = if CURRENT_DEVICE.mark() != 8 {
         Box::new(
             KoboFramebuffer1::new(FB_DEVICE)
@@ -31,7 +31,7 @@ pub fn new_frame_buffer(rotate: i8) -> Box<dyn Framebuffer>{
     fb
 }
 
-pub fn set_pixel_map_ro(fb: &mut Box<dyn Framebuffer>, delta: &MapDelta, pixmap: &ReadonlyPixmap){
+pub fn set_pixel_map_ro(fb: &mut Box<dyn Framebuffer>, delta: &MapDelta, pixmap: &ReadonlyPixmap) {
     #[cfg(feature = "eink_device")]
     {
         for y in 0..pixmap.height {
