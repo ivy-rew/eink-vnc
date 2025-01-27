@@ -32,6 +32,26 @@ use std::sync::mpsc;
 use anyhow::Error;
 
 
+pub struct Draw {
+    pub dirty_rects: Vec<Rectangle>,
+    pub dirty_rects_since_refresh: Vec<Rectangle>,
+    pub has_drawn_once: bool,
+    pub dirty_update_count: usize,
+    pub time_at_last_draw: Instant,
+}
+
+impl Draw {
+    pub fn new() -> Draw{
+        return Draw {
+            dirty_rects: Vec::<Rectangle>::new(),
+            dirty_rects_since_refresh: Vec::<Rectangle>::new(),
+            has_drawn_once: false, 
+            dirty_update_count: 0,
+            time_at_last_draw: Instant::now(),
+        }
+    }
+}
+
 pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
     #[cfg(feature = "eink_device")]
     debug!(
@@ -44,18 +64,11 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
     
     let (width, height) = vnc.size();
     vnc.format();
-    const FRAME_MS: u64 = 1000 / 30;
     
+    const FRAME_MS: u64 = 1000 / 30;
     const MAX_DIRTY_REFRESHES: usize = 500;
     
-    let mut dirty_rects: Vec<Rectangle> = Vec::new();
-    let mut dirty_rects_since_refresh: Vec<Rectangle> = Vec::new();
-    let mut has_drawn_once = false;
-    let mut dirty_update_count = 0;
-    
-    let mut time_at_last_draw = Instant::now();
-    
-    let fb_rect = rect![0, 0, width as i32, height as i32];
+    let mut draw = Draw::new();
     
     let post_proc_bin = PostProcBin::new(&config.processing);
     
@@ -138,21 +151,22 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                     let t = vnc_rect.top as i32;
 
                     let delta_rect = rect![l, t, l + w, t + h];
+                    let fb_rect = rect![0, 0, width as i32, height as i32];
                     if delta_rect == fb_rect {
-                        dirty_rects.clear();
-                        dirty_rects_since_refresh.clear();
+                        draw.dirty_rects.clear();
+                        draw.dirty_rects_since_refresh.clear();
                         #[cfg(feature = "eink_device")]
                         {
-                            if !has_drawn_once || dirty_update_count > MAX_DIRTY_REFRESHES {
+                            if !draw.has_drawn_once || draw.dirty_update_count > MAX_DIRTY_REFRESHES {
                                 fb.update(&fb_rect, UpdateMode::Full).ok();
-                                dirty_update_count = 0;
-                                has_drawn_once = true;
+                                draw.dirty_update_count = 0;
+                                draw.has_drawn_once = true;
                             } else {
                                 fb.update(&fb_rect, UpdateMode::Partial).ok();
                             }
                         }
                     } else {
-                        push_to_dirty_rect_list(&mut dirty_rects, delta_rect);
+                        push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                     }
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
@@ -193,29 +207,29 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                         (dst.left + dst.width) as i32,
                         (dst.top + dst.height) as i32
                     ];
-                    push_to_dirty_rect_list(&mut dirty_rects, delta_rect);
+                    push_to_dirty_rect_list(&mut draw.dirty_rects, delta_rect);
                 }
                 Event::EndOfFrame => {
                     debug!("End of frame!");
 
-                    if !has_drawn_once {
-                        has_drawn_once = dirty_rects.len() > 0;
+                    if !draw.has_drawn_once {
+                        draw.has_drawn_once = draw.dirty_rects.len() > 0;
                     }
 
-                    dirty_update_count += 1;
+                    draw.dirty_update_count += 1;
 
-                    if dirty_update_count > MAX_DIRTY_REFRESHES {
+                    if draw.dirty_update_count > MAX_DIRTY_REFRESHES {
                         info!("Full refresh!");
-                        for dr in &dirty_rects_since_refresh {
+                        for dr in &draw.dirty_rects_since_refresh {
                             #[cfg(feature = "eink_device")]
                             {
                                 fb.update(&dr, UpdateMode::Full).ok();
                             }
                         }
-                        dirty_update_count = 0;
-                        dirty_rects_since_refresh.clear();
+                        draw.dirty_update_count = 0;
+                        draw.dirty_rects_since_refresh.clear();
                     } else {
-                        for dr in &dirty_rects {
+                        for dr in &draw.dirty_rects {
                             debug!("Updating dirty rect {:?}", dr);
 
                             #[cfg(feature = "eink_device")]
@@ -228,13 +242,13 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
                                 }
                             }
 
-                            push_to_dirty_rect_list(&mut dirty_rects_since_refresh, *dr);
+                            push_to_dirty_rect_list(&mut draw.dirty_rects_since_refresh, *dr);
                         }
 
-                        time_at_last_draw = Instant::now();
+                        draw.time_at_last_draw = Instant::now();
                     }
 
-                    dirty_rects.clear();
+                    draw.dirty_rects.clear();
                 }
                 // x => info!("{:?}", x), /* ignore unsupported events */
                 _ => (),
@@ -242,15 +256,15 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
         }
 
         if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
-            if dirty_rects_since_refresh.len() > 0 && time_at_last_draw.elapsed().as_secs() > 3 {
-                for dr in &dirty_rects_since_refresh {
+            if draw.dirty_rects_since_refresh.len() > 0 && draw.time_at_last_draw.elapsed().as_secs() > 3 {
+                for dr in &draw.dirty_rects_since_refresh {
                     #[cfg(feature = "eink_device")]
                     {
                         fb.update(&dr, UpdateMode::Full).ok();
                     }
                 }
-                dirty_update_count = 0;
-                dirty_rects_since_refresh.clear();
+                draw.dirty_update_count = 0;
+                draw.dirty_rects_since_refresh.clear();
             }
 
             if FRAME_MS > time_at_sol.elapsed().as_millis() as u64 {
