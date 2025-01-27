@@ -63,34 +63,20 @@ pub fn run(mut vnc: &mut Client, mut fb: &mut Box<dyn Framebuffer>, config: &Con
     let post_proc_bin = PostProcBin::new(&config.processing);
     
     let touch_enabled: bool = !config.view_only;
-    let rx: Receiver<Touch> = if touch_enabled {
-        record_touch_events(config.touch_input.to_string())
+    let touch_display: Receiver<Touch> = if touch_enabled {
+        touch::record_screen(config.touch_input.to_string())
     } else {
         mpsc::channel().1 // no-op; never sending anything
     };
 
     let mut last_button: u8 = MOUSE_UNKNOWN;
-    let mut last_button_pen: u8 = MOUSE_UNKNOWN;
-    let mut last_full_touch: Option<Touch> = None;
 
     'running: loop {
         let time_at_sol = Instant::now();
     
-        for t in rx.try_iter() {
-            last_button = mouse_btn_to_vnc(t.button).unwrap_or(last_button);
-            let send_button: u8 = if t.distance.is_some() && t.distance.unwrap().is_positive() {
-                MOUSE_UNKNOWN // not-touching; keep mouse up (pre-serving any passed last_button state)
-            } else {
-                last_button
-            };
-            vnc.send_pointer_event(send_button,
-                t.position.x.try_into().unwrap(),
-                t.position.y.try_into().unwrap()
-            ).unwrap();
-            if (t.stylus_back.is_some() && t.stylus_back.unwrap().eq(&1)) {
-                info!("full update due to stylus back-button-touch");
-                vnc.request_update(full_rect(vnc.size()), false).unwrap();
-            }
+        for touch in touch_display.try_iter() {
+            last_button = mouse_btn_to_vnc(touch.button).unwrap_or(last_button);
+            touch::touch_vnc(vnc, touch, last_button);
         }
 
         for event in vnc.poll_iter() {
@@ -313,23 +299,6 @@ fn push_to_dirty_rect_list(list: &mut Vec<Rectangle>, rect: Rectangle) {
     }
 
     list.push(rect);
-}
-
-fn record_touch_events(touch_input: String) -> Receiver<Touch> {
-    let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        let screen = TouchEventListener::open_input(touch_input).unwrap();
-        loop {
-            match screen.next_touch(None) {
-                Some(touch) => {
-                    debug!("touched on screen {:?}", touch.position);
-                    tx.send(touch).unwrap();
-                },
-                None => {}
-            };
-        }
-    });
-    return rx;
 }
 
 pub fn full_rect(size: (u16,u16)) -> Rect {
