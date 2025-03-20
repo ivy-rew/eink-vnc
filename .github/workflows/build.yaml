@@ -35,6 +35,6 @@ jobs:
         path: client/target/arm-unknown-linux-musleabihf/release/einkvnc
     - name: Build Emulator
       run: |
-        sudo apt install libsdl2-dev
+        sudo apt install -y libsdl2-dev libevdev-dev
         cd emulator
         cargo build
