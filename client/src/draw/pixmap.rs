@@ -17,7 +17,13 @@ impl<'a> ReadonlyPixmap<'a> {
         }
         let addr = self.samples * (y * self.width + x) as usize;
         if self.samples == 1 {
-            Color::Gray(self.data[addr])
+            let max=self.data.len();
+            if max < addr+4 {
+                return RED; // signal an invalid pixel request
+            }
+            let col = self.data[addr];
+            //debug!("color {}", col);
+            Color::Gray(col)
         } else {
             let max=self.data.len();
             if max < addr+4 {

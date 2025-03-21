@@ -12,7 +12,7 @@ mod touch;
 pub mod vnc;
 
 extern crate vnc as vnc_client;
-use vnc_client::{client, Client, Rect};
+use vnc_client::{client, Client, PixelFormat, Rect};
 
 use crate::config::Config;
 use crate::draw::Draw;
@@ -30,6 +30,19 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
+pub const SD_COLOR_FORMAT: PixelFormat = PixelFormat {
+    bits_per_pixel: 8,
+    depth: 16,
+    big_endian: false,
+    true_colour: true,
+    red_max: 255,
+    green_max: 255,
+    blue_max: 255,
+    red_shift: 16,
+    green_shift: 8,
+    blue_shift: 0,
+};
+
 pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
     #[cfg(feature = "eink_device")]
     debug!(
@@ -39,6 +52,9 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
 
     let (width, height) = vnc.size();
     vnc.format();
+
+    vnc.set_format(SD_COLOR_FORMAT).unwrap();
+    info!("enforced {:?}", SD_COLOR_FORMAT);
 
     const FRAME_MS: u64 = 1000 / 30;
 
