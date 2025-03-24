@@ -23,8 +23,8 @@ fn main() -> Result<(), Error> {
     let config = local_config();
     let mut vnc = einkvnc::vnc::connect(config.connection);
     info!("vnc format: {:?}", vnc.format());
-    vnc.set_format(einkvnc::SD_COLOR_FORMAT).unwrap();
-    info!("enforced {:?}", einkvnc::SD_COLOR_FORMAT);
+    // vnc.set_format(einkvnc::SD_COLOR_FORMAT).unwrap();
+    // info!("enforced {:?}", einkvnc::SD_COLOR_FORMAT);
 
     let (width, height) = CURRENT_DEVICE.dims;
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));

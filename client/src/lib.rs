@@ -30,17 +30,16 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-pub const SD_COLOR_FORMAT: PixelFormat = PixelFormat {
-    bits_per_pixel: 8,
-    depth: 16,
-    big_endian: false,
-    true_colour: true,
-    red_max: 255,
-    green_max: 255,
-    blue_max: 255,
-    red_shift: 16,
-    green_shift: 8,
-    blue_shift: 0,
+pub const RGB888:PixelFormat = PixelFormat {
+    bits_per_pixel: 32, depth: 24, big_endian: false, true_colour: true,
+    red_max: 255,  green_max: 255, blue_max: 255,
+    red_shift: 16, green_shift: 8, blue_shift: 0
+};
+
+pub const BGR888:PixelFormat = PixelFormat {
+    bits_per_pixel: 32, depth: 24, big_endian: false, true_colour: true,
+    red_max: 255,  green_max: 255, blue_max: 255,
+    red_shift: 0, green_shift: 8, blue_shift: 16
 };
 
 pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> Result<(), Error> {
@@ -53,8 +52,8 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
     let (width, height) = vnc.size();
     vnc.format();
 
-    vnc.set_format(SD_COLOR_FORMAT).unwrap();
-    info!("enforced {:?}", SD_COLOR_FORMAT);
+    vnc.set_format(RGB888).unwrap();
+    info!("enforced {:?}", RGB888);
 
     const FRAME_MS: u64 = 1000 / 30;
 
