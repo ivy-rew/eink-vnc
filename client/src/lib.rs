@@ -90,15 +90,9 @@ pub fn run(vnc: &mut Client, fb: &mut Box<dyn Framebuffer>, config: &Config) -> 
 
                     let elapsed_ms = time_at_sol.elapsed().as_millis();
                     debug!("network Δt: {}", elapsed_ms);
-
-                    let steps = if CURRENT_DEVICE.color_samples() == 1 {
-                        4
-                    } else {
-                        1
-                    };
                     let post_process = pixels
                         .iter()
-                        .step_by(steps)
+                        .step_by(processing::steps(CURRENT_DEVICE.color_samples()))
                         .map(|&c| post_proc_bin.data[c as usize])
                         .collect();
                     let map = draw::util::to_map(&vnc_rect, &post_process);

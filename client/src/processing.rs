@@ -7,7 +7,7 @@ pub struct PostProcBin {
 
 impl PostProcBin {
     pub fn new(config: &PostProcConfig) -> PostProcBin {
-        return PostProcBin {
+                return PostProcBin {
             data: (0..=255)
                 .map(|i| {
                     if config.contrast_exp == 1.0 {
@@ -41,6 +41,13 @@ impl PostProcBin {
         };
 
     }
+}
+
+pub fn steps(color_samples: usize) -> usize {
+    if color_samples == 1 {
+        return 4;
+    }
+    return 1;
 }
 
 #[derive(Debug, Copy, Clone)]
