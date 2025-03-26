@@ -41,7 +41,7 @@ fn main() -> Result<(), Error> {
 fn local_config() -> Config<'static> {
     Config{
         connection: einkvnc::vnc::Connection { host: "localhost", port: 5901, username: None, password: Some("123456"), exclusive: false },
-        processing: einkvnc::processing::PostProcConfig { contrast_exp: 1.0, contrast_gray_point: 224.0, white_cutoff: 225 },
+        processing: einkvnc::processing::PostProcConfig { contrast_exp: 1.0, contrast_gray_point: 224.0, white_cutoff: 255 },
         rotate: 1,
         view_only: true,
         touch_input: "/dev/oblivion".to_string(),
