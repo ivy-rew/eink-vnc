@@ -43,6 +43,21 @@ impl PostProcBin {
     }
 }
 
+pub fn streamline_pixel_color(pixels: &Vec<u8>, post_proc: &PostProcBin) -> Vec<u8> {
+    if display::device::CURRENT_DEVICE.color_samples() == 1 {
+        pixels
+            .chunks(4)
+            .map(|chunks| {
+                let rgb =display::color::Color::from_rgb(chunks);
+                rgb.gray()
+            })
+            .map(|c| post_proc.data[c as usize])
+            .collect()
+    } else {
+        pixels.iter().map(|&f| f).collect()
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct PostProcConfig {
     pub contrast_exp: f32,
