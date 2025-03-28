@@ -168,6 +168,7 @@ dependencies = [
 [[package]]
 name = "display"
 version = "0.9.44"
+source = "git+https://github.com/ivy-rew/plato.git?branch=split#9574129e7840aa1ab22d90971744a83058a02b24"
 dependencies = [
  "anyhow",
  "fxhash",
