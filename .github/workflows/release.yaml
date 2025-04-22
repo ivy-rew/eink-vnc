@@ -37,6 +37,7 @@ jobs:
     - name: Upload release
       uses: softprops/action-gh-release@v2
       with:
+        name: 'Next Release 🧪'
         draft: true
         files: |
           KoboRoot.tgz
