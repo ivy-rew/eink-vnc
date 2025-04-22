@@ -1,10 +1,8 @@
 #!/bin/sh
 
-defIP="192.168.1.37"
-defPort="5901"
-defPass="123456"
-
 DIR=$(dirname -- "$0");
+
+. "${DIR}/default_client.sh"
 
 if [ -z "$(command -v qndb)" ]; then
   echo "NickelDBUS missing; unable to find qndb."
@@ -82,8 +80,9 @@ ctrl_c () {
 
 log=$($DIR/einkvnc "${ip}" --port "${port}"\
  --password "${secret}"\
- --contrast 2.0\
- --rotate 4\
+ --contrast "${defContrast}"\
+ --rotate "${defRotation}"\
+ --touch "$KOBO_TS_INPUT"\
  2>&1)
 problems=$(echo "$log" | grep -E "ERROR|panic")
 if [ ! -z "$problems" ]; then
