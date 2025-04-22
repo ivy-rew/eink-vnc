@@ -39,7 +39,6 @@ jobs:
       with:
         name: Next Release
         draft: true
-        body: '<!-- replace this with the release notes -->'
         files: |
           KoboRoot.tgz
         token: ${{ secrets.GITHUB_TOKEN }}
