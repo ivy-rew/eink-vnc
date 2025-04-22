@@ -1,0 +1,42 @@
+name: Release
+on: [workflow_dispatch]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: einkvnc
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        target: arm-unknown-linux-musleabihf
+    - name: Install Cross
+      run: cargo install cross
+    - name: Build Client
+      run: |
+        cd client
+        export CARGO_BUILD_TARGET=arm-unknown-linux-musleabihf
+        cross build --release
+    - name: 'Kobo Tar files'
+      run: |
+        release=client/target/kobo/
+        mkdir -p $release/./mnt/onboard/.adds/einkvnc
+        cp -v client/target/arm-unknown-linux-musleabihf/release/einkvnc $release/./mnt/onboard/.adds/einkvnc/
+        cp -v nickel/* $release/./mnt/onboard/.adds/einkvnc/
+        tar -czvf KoboRoot.tgz -C $release .
+    - name: Upload release archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: eInkVnc
+        path: |
+          KoboRoot.tgz

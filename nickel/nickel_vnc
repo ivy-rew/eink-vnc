@@ -1,3 +1,3 @@
-menu_item :main    :VNC run        :cmd_spawn          :/mnt/onboard/.adds/vnc/nickel_dialog.sh
-menu_item :reader  :VNC run        :cmd_spawn          :/mnt/onboard/.adds/vnc/nickel_dialog.sh
+menu_item :main    :VNC run        :cmd_spawn          :/mnt/onboard/.adds/einkvnc/nickel_dialog.sh
+menu_item :reader  :VNC run        :cmd_spawn          :/mnt/onboard/.adds/einkvnc/nickel_dialog.sh
 menu_item :main    :VNC kill       :cmd_spawn          :pkill einkvnc
