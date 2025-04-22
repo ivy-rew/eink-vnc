@@ -1,10 +1,8 @@
 #!/bin/sh
 
-defIP="192.168.1.37"
-defPort="5901"
-defPass="123456"
-
 DIR=$(dirname -- "$0");
+
+. "${DIR}/default_client.sh"
 
 if [ -z "$(command -v qndb)" ]; then
   echo "NickelDBUS missing; unable to find qndb."
@@ -58,20 +56,17 @@ if [ "$useDef" = 0 ]; then
   ip=$(ask "VNC connect to IP" "$defIP")
   echo "target: ${ip}"
   if [ -z "$ip" ]; then
-    exit 1
+    ip="${defIP}"
   fi
 
   port=$(ask "VNC port on ${ip}" "$defPort")
   echo "port: ${port}"
   if [ -z "$port" ]; then
-    exit 1
+    port="${defPort}"
   fi
 
   secret=$(askPass "VNC password on ${ip}" "$defPass")
   echo "pass: ${secret}"
-  if [ -z "$secret" ]; then
-    exit 1
-  fi
 fi
 
 target=${ip}:${port}
@@ -83,7 +78,12 @@ ctrl_c () {
   exit 0
 }
 
-log=$($DIR/einkvnc "${ip}" --port "${port}" --password "${secret}" --contrast 2 2>&1)
+log=$($DIR/einkvnc "${ip}" --port "${port}"\
+ --password "${secret}"\
+ --contrast "${defContrast}"\
+ --rotate "${defRotation}"\
+ --touch "$KOBO_TS_INPUT"\
+ 2>&1)
 problems=$(echo "$log" | grep -E "ERROR|panic")
 if [ ! -z "$problems" ]; then
   toast "VNC client for $target failed:\n $problems"
