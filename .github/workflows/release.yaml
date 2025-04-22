@@ -34,9 +34,12 @@ jobs:
         cp -v client/target/arm-unknown-linux-musleabihf/release/einkvnc $release/./mnt/onboard/.adds/einkvnc/
         cp -v nickel/* $release/./mnt/onboard/.adds/einkvnc/
         tar -czvf KoboRoot.tgz -C $release .
-    - name: Upload release archive
-      uses: actions/upload-artifact@v4
+    - name: Upload release
+      uses: softprops/action-gh-release@v2
       with:
-        name: eInkVnc
-        path: |
+        name: Next Release
+        draft: true
+        body: '<!-- replace this with the release notes -->'
+        files: |
           KoboRoot.tgz
+        token: ${{ secrets.GITHUB_TOKEN }}
