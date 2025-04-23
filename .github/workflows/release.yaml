@@ -32,7 +32,9 @@ jobs:
         release=client/target/kobo/
         mkdir -p $release/./mnt/onboard/.adds/einkvnc
         cp -v client/target/arm-unknown-linux-musleabihf/release/einkvnc $release/./mnt/onboard/.adds/einkvnc/
-        cp -v nickel/* $release/./mnt/onboard/.adds/einkvnc/
+        cp -v nickel/*.sh $release/./mnt/onboard/.adds/einkvnc/
+        mkdir -p $release/./mnt/onboard/.adds/nm
+        cp -v nickel/nickel_vnc $release/./mnt/onboard/.adds/nm/einkvnc
         tar -czvf KoboRoot.tgz -C $release .
     - name: Upload release
       uses: softprops/action-gh-release@v2
