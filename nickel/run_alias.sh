@@ -11,4 +11,4 @@ if [ -z "$port" ]; then
   port=5901
 fi
 
-alias vnc="$DIR/einkvnc $ip --port $port --password 123456 --touch $KOBO_TS_INPUT --rotate $defRotation"
+alias vnc="$DIR/einkvnc $ip --port $port --password $defPass --touch $KOBO_TS_INPUT --rotate $defRotation"
