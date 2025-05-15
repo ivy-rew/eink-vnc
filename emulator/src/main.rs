@@ -23,7 +23,8 @@ fn main() -> Result<(), Error> {
     let config = local_config();
     let mut vnc = einkvnc::vnc::connect(config.connection);
 
-    let (width, height) = CURRENT_DEVICE.dims;
+    let (height, width) = CURRENT_DEVICE.dims;
+    info!("size w={} h={}", width, height);
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));
     println!("{} is running on a Kobo {}.", APP_NAME, CURRENT_DEVICE.model);
 
