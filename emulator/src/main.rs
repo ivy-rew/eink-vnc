@@ -23,7 +23,8 @@ fn main() -> Result<(), Error> {
     let config = local_config();
     let mut vnc = einkvnc::vnc::connect(config.connection);
 
-    let (width, height) = CURRENT_DEVICE.dims;
+    let (height, width) = CURRENT_DEVICE.dims;
+    info!("size w={} h={}", width, height);
     let mut vnc_fb: Box<dyn Framebuffer> = localbuffer::new(APP_NAME, width, cmp::min(960, height));
     println!("{} is running on a Kobo {}.", APP_NAME, CURRENT_DEVICE.model);
 
@@ -37,8 +38,18 @@ fn main() -> Result<(), Error> {
 
 fn local_config() -> Config<'static> {
     Config{
-        connection: einkvnc::vnc::Connection { host: "localhost", port: 5901, username: None, password: Some("123456"), exclusive: false },
-        processing: einkvnc::processing::PostProcConfig { contrast_exp: 1.0, contrast_gray_point: 224.0, white_cutoff: 255 },
+        connection: einkvnc::vnc::Connection { 
+            host: "localhost", 
+            port: 5901, 
+            username: None, 
+            password: Some("123456"), 
+            exclusive: false 
+        },
+        processing: einkvnc::processing::PostProcConfig { 
+            contrast_exp: 1.0, 
+            contrast_gray_point: 224.0, 
+            white_cutoff: 255 
+        },
         rotate: 1,
         view_only: true,
         touch_input: "/dev/oblivion".to_string(),

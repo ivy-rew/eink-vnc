@@ -15,7 +15,7 @@ pub fn new(title: &str, width: u32, height: u32) -> Box<dyn Framebuffer>{
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
-                 .window(title, width, height)
+                 .window(title, width, (height+300))
                  .resizable()
                  .position_centered()
                  .build()
