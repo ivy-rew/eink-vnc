@@ -91,3 +91,17 @@ For example:
 ``` shell
 ./einkvnc 192.168.2.1 --port 5902 --password abcdefg123 --contrast 2 
 ```
+
+### Dedicated ✍️
+
+To run without any disturbing updates from the still running Kobo eReader 
+you may kill the running Kobo software by running the `./kill_nickel.sh` in the einkvnc dir. 
+
+This comes with the benefit that the Stylus Pen interactions are
+only consumed by einkvnc, and therefore work better. 
+Especially the "manual-refresh", which is triggered by double-tapping with the eraser of the pen, 
+will only work if there is no concurrent Kobo software running.
+
+In order to go back into the Kobo default software
+after you are done with VNC, 
+I recommend to restart the device trough a `reboot` command.
