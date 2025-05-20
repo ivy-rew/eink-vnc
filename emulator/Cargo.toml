@@ -1,7 +1,7 @@
 [package]
 authors = ["Reguël Wermelinger <r.wermelinger@gmail.com>"]
 name = "emulator"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 
 [[bin]]
